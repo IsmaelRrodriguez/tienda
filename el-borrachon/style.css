@@ -1,3 +1,10 @@
+/* 1. REINICIO DE ESTILOS (Global Reset) - Esto arregla el desorden de arriba */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 :root {
     --primary-color: #ff9f43;
     --turquoise-color: #64b3a5; /* El color verde agua del botón Get Started */
@@ -12,8 +19,7 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: var(--dark-bg);
     color: var(--text-color);
-    margin: 0;
-    padding: 0;
+    overflow-x: hidden;
 }
 
 /* --- ESTILO LANDING / GRAYSCALE STYLE --- */
@@ -36,14 +42,14 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 0 2rem;
-    box-sizing: border-box;
 }
 
-.nav-logo {
-    color: rgba(255, 255, 255, 0.8);
+/* Forzar que el logo sea blanco y no azul */
+.nav-logo, .nav-logo:visited {
+    color: #ffffff !important;
     text-decoration: none;
     font-weight: bold;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     letter-spacing: 0.1rem;
 }
 
@@ -53,25 +59,28 @@ body {
     gap: 2rem;
 }
 
-.nav-links a {
-    color: rgba(255, 255, 255, 0.6);
+/* Arreglo crítico para los enlaces: Evita que se pongan azules o morados */
+.nav-links a, .nav-links a:visited {
+    color: rgba(255, 255, 255, 0.7) !important;
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     transition: color 0.3s;
+    font-weight: 500;
 }
 
 .nav-links a:hover {
-    color: #ffffff;
+    color: #ffffff !important;
 }
 
 .btn-nav-login {
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     color: white;
-    padding: 0.4rem 1rem;
+    padding: 0.5rem 1.2rem;
     border-radius: 4px;
     cursor: pointer;
     transition: 0.3s;
+    font-weight: bold;
 }
 
 .btn-nav-login:hover {
@@ -79,27 +88,30 @@ body {
     color: black;
 }
 
-/* Sección Hero (Contenedor de la imagen de fondo) */
+/* Sección Hero - Forzamos el tamaño completo de pantalla */
 .hero-section {
     position: relative;
     height: 100vh;
-    width: 100%;
-    /* Reemplazable por cualquier imagen de bar o bebidas que prefieras */
-    background: url('https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=1600') no-repeat center center/cover;
+    width: 100vw;
+    /* Nueva imagen directa de bebidas en barra de alta calidad */
+    background-image: url('https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?q=80&w=1600') !important;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
     display: flex;
     justify-content: center;
     align-items: center;
     text-align: center;
 }
 
-/* Capa oscura encima de la imagen para simular el estilo Grayscale y dar contraste */
+/* Capa oscura encima de la imagen */
 .hero-overlay {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.8) 100%);
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.85) 100%);
     z-index: 1;
 }
 
@@ -107,26 +119,25 @@ body {
 .hero-content {
     position: relative;
     z-index: 2;
-    max-width: 700px;
-    padding: 0 1rem;
+    max-width: 800px;
+    padding: 0 1.5rem;
 }
 
 .hero-title {
     font-size: 4.5rem;
-    font-weight: 700;
-    letter-spacing: 0.5rem;
-    margin: 0 0 1rem 0;
-    background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0px 4px 10px rgba(0,0,0,0.5);
+    font-weight: 800;
+    letter-spacing: 0.6rem;
+    margin-bottom: 1.5rem;
+    color: #ffffff;
+    text-shadow: 0px 4px 15px rgba(0,0,0,0.6);
 }
 
 .hero-subtitle {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 1.1rem;
-    margin-bottom: 2.5rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.2rem;
+    margin-bottom: 3rem;
     letter-spacing: 0.05rem;
+    text-shadow: 0px 2px 8px rgba(0,0,0,0.6);
 }
 
 /* Botón Get Started estilo Grayscale */
@@ -134,19 +145,19 @@ body {
     background-color: var(--turquoise-color);
     color: #ffffff;
     font-weight: bold;
-    letter-spacing: 0.1rem;
+    letter-spacing: 0.15rem;
     border: none;
-    padding: 1rem 2rem;
-    font-size: 0.9rem;
+    padding: 1.2rem 2.5rem;
+    font-size: 0.95rem;
     border-radius: 5px;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
     transition: background-color 0.3s, transform 0.2s;
 }
 
 .btn-get-started:hover {
     background-color: #529b8f;
-    transform: translateY(-2px);
+    transform: translateY(-3px);
 }
 
 /* --- VENTANA MODAL (LOGIN) --- */
@@ -156,7 +167,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.8);
+    background-color: rgba(0,0,0,0.85);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -186,7 +197,6 @@ body {
 
 .hidden { display: none !important; }
 
-/* Formulario básico de login */
 .form-group { margin-bottom: 1.5rem; text-align: left; }
 .form-group label { display: block; margin-bottom: 0.5rem; color: var(--primary-color); }
 input { width: 100%; padding: 0.75rem; box-sizing: border-box; border: 1px solid #444; background-color: #15151a; color: white; border-radius: 5px; }
@@ -196,7 +206,7 @@ input { width: 100%; padding: 0.75rem; box-sizing: border-box; border: 1px solid
 
 .test-credentials { margin-top: 1.5rem; font-size: 0.85rem; color: #888; background: #15151a; padding: 0.5rem; border-radius: 5px; }
 
-/* --- ESTILOS DE LA TIENDA (Permanecen igual para tienda.html) --- */
+/* --- ESTILOS DE LA TIENDA --- */
 .navbar { display: flex; justify-content: space-between; align-items: center; background-color: #111; padding: 1rem 2rem; border-bottom: 3px solid var(--turquoise-color); }
 .container { padding: 2rem; max-width: 1200px; margin: auto; }
 .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 3rem; }
