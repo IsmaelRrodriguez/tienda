@@ -13,10 +13,25 @@ let products = JSON.parse(localStorage.getItem('products'));
 let cart = [];
 let currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || null;
 
-// --- DETECCIÓN DE PÁGINA ACTUAL ---
+// --- DETECCIÓN DE PÁGINA ACTUAL Y CONTROL DE MODAL ---
 document.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById("login-form")) {
         initLogin();
+        
+        // Controladores para mostrar/ocultar el modal de Login
+        const modal = document.getElementById("login-modal");
+        const getStartedBtn = document.getElementById("get-started-btn");
+        const showLoginBtn = document.getElementById("show-login-btn");
+        const closeModalBtn = document.getElementById("close-modal-btn");
+
+        getStartedBtn.addEventListener("click", () => modal.classList.remove("hidden"));
+        showLoginBtn.addEventListener("click", () => modal.classList.remove("hidden"));
+        closeModalBtn.addEventListener("click", () => modal.classList.add("hidden"));
+        
+        // Cerrar si hace clic fuera del recuadro
+        window.addEventListener("click", (e) => {
+            if (e.target === modal) modal.classList.add("hidden");
+        });
     } else {
         initStore();
     }
@@ -30,7 +45,6 @@ function initLogin() {
         const email = document.getElementById("email").value;
         const password = document.getElementById("password").value;
 
-        // Validación simple basada en Roles
         if (email === "admin@borrachon.com" && password === "admin123") {
             currentUser = { email, role: "admin" };
         } else if (email === "cliente@correo.com" && password === "user123") {
@@ -52,28 +66,23 @@ function initStore() {
         return;
     }
 
-    // Mostrar saludo
     document.getElementById("welcome-msg").innerText = `Hola, ${currentUser.email} (${currentUser.role})`;
 
-    // Control de vistas por rol
     if (currentUser.role === "admin") {
         document.getElementById("admin-panel").classList.remove("hidden");
     } else if (currentUser.role === "client") {
         document.getElementById("client-panel").classList.remove("hidden");
     }
 
-    // Botón Salir
     document.getElementById("logout-btn").addEventListener("click", () => {
         sessionStorage.removeItem('currentUser');
         window.location.href = "index.html";
     });
 
-    // CRUD de Administrador (Eventos)
     if (currentUser.role === "admin") {
         document.getElementById("product-form").addEventListener("submit", handleProductSubmit);
     }
 
-    // Checkout de cliente
     if (currentUser.role === "client") {
         document.getElementById("checkout-btn").addEventListener("click", () => {
             if (cart.length === 0) return alert("Tu carrito está vacío.");
@@ -89,6 +98,7 @@ function initStore() {
 // --- RENDERIZAR CATÁLOGO ---
 function renderProducts() {
     const container = document.getElementById("products-container");
+    if (!container) return;
     container.innerHTML = "";
 
     products.forEach(product => {
@@ -124,10 +134,8 @@ function handleProductSubmit(e) {
     const img = document.getElementById("prod-img").value;
 
     if (id) {
-        // Modo Edición
         products = products.map(p => p.id == id ? { id: parseInt(id), name, price, img } : p);
     } else {
-        // Modo Creación
         const newProd = { id: Date.now(), name, price, img };
         products.push(newProd);
     }
@@ -173,6 +181,7 @@ window.addToCart = function(id) {
 function renderCart() {
     const cartContainer = document.getElementById("cart-items");
     const totalContainer = document.getElementById("cart-total-val");
+    if (!cartContainer) return;
     cartContainer.innerHTML = "";
 
     let total = 0;
