@@ -1,0 +1,141 @@
+:root {
+    --primary-color: #ff9f43;
+    --dark-bg: #1e1e24;
+    --card-bg: #2a2a35;
+    --text-color: #ffffff;
+    --danger: #ff6b6b;
+    --success: #1dd1a1;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--dark-bg);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+}
+
+/* Login */
+.login-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(135deg, #1e1e24 0%, #0f0f13 100%);
+}
+
+.login-container {
+    background-color: var(--card-bg);
+    padding: 2.5rem;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+}
+
+input {
+    width: 100%;
+    padding: 0.75rem;
+    box-sizing: border-box;
+    border: 1px solid #444;
+    background-color: #15151a;
+    color: white;
+    border-radius: 5px;
+}
+
+/* Botones */
+.btn {
+    background-color: var(--primary-color);
+    color: #000;
+    font-weight: bold;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    width: 100%;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn:hover { background-color: #ffb366; }
+.btn-sm { background: var(--danger); border: none; padding: 0.5rem 1rem; color: white; border-radius: 4px; cursor: pointer;}
+
+/* Navbar */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #111;
+    padding: 1rem 2rem;
+    border-bottom: 3px solid var(--primary-color);
+}
+
+.container { padding: 2rem; max-width: 1200px; margin: auto; }
+.hidden { display: none !important; }
+
+/* Grid de Productos */
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.product-card {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid #333;
+}
+
+.product-card img {
+    max-width: 100%;
+    height: 180px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+/* Formularios de Admin */
+.admin-form .form-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    background: #15151a;
+    padding: 1rem;
+    border-radius: 6px;
+}
+.admin-form input { flex: 1; min-width: 150px; }
+
+/* Carrito */
+.cart-section {
+    background-color: #15151a;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-top: 4px solid var(--success);
+}
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #333;
+}
+.test-credentials {
+    margin-top: 1.5rem;
+    font-size: 0.85rem;
+    color: #888;
+    background: #15151a;
+    padding: 0.5rem;
+    border-radius: 5px;
+}

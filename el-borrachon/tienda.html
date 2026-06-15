@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Borrachón - Tienda</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <h1>🍻 El Borrachón</h1>
+            <div class="user-info">
+                <span id="welcome-msg">Bienvenido</span>
+                <button id="logout-btn" class="btn-sm">Cerrar Sesión</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section id="admin-panel" class="hidden">
+            <h2>🛠️ Panel de Administración (Gestión de Productos)</h2>
+            <form id="product-form" class="admin-form">
+                <input type="hidden" id="product-id">
+                <div class="form-row">
+                    <input type="text" id="prod-name" placeholder="Nombre de la bebida" required>
+                    <input type="number" id="prod-price" placeholder="Precio" step="0.01" required>
+                    <input type="text" id="prod-img" placeholder="URL de la imagen" required>
+                    <button type="submit" id="form-submit-btn" class="btn">Guardar Producto</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="shop-section">
+            <h2>Nuestro Catálogo</h2>
+            <div id="products-container" class="products-grid">
+                </div>
+        </section>
+
+        <section id="client-panel" class="cart-section hidden">
+            <h2>🛒 Tu Carrito de Compras</h2>
+            <div id="cart-items">
+                </div>
+            <div class="cart-total">
+                <h3>Total: $<span id="cart-total-val">0.00</span></h3>
+                <button id="checkout-btn" class="btn">Finalizar Compra</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
