@@ -1,4 +1,4 @@
-/* 1. REINICIO DE ESTILOS (Global Reset) - Esto arregla el desorden de arriba */
+/* --- 1. REINICIO DE ESTILOS (Global Reset) --- */
 * {
     margin: 0;
     padding: 0;
@@ -22,7 +22,7 @@ body {
     overflow-x: hidden;
 }
 
-/* --- ESTILO LANDING / GRAYSCALE STYLE --- */
+/* --- 2. ESTILO LANDING / GRAYSCALE STYLE --- */
 
 /* Barra de navegación superior */
 .landing-nav {
@@ -44,7 +44,7 @@ body {
     padding: 0 2rem;
 }
 
-/* Forzar que el logo sea blanco y no azul */
+/* Control del color del logo */
 .nav-logo, .nav-logo:visited {
     color: #ffffff !important;
     text-decoration: none;
@@ -59,7 +59,7 @@ body {
     gap: 2rem;
 }
 
-/* Arreglo crítico para los enlaces: Evita que se pongan azules o morados */
+/* Control de los enlaces superiores (Evita que se pongan azules o morados) */
 .nav-links a, .nav-links a:visited {
     color: rgba(255, 255, 255, 0.7) !important;
     text-decoration: none;
@@ -88,12 +88,11 @@ body {
     color: black;
 }
 
-/* Sección Hero - Forzamos el tamaño completo de pantalla */
+/* Sección Hero (Pantalla Completa de Inicio) */
 .hero-section {
     position: relative;
     height: 100vh;
     width: 100vw;
-    /* Nueva imagen directa de bebidas en barra de alta calidad */
     background-image: url('https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?q=80&w=1600') !important;
     background-repeat: no-repeat;
     background-position: center center;
@@ -104,7 +103,7 @@ body {
     text-align: center;
 }
 
-/* Capa oscura encima de la imagen */
+/* Capa oscura protectora de texto sobre la imagen */
 .hero-overlay {
     position: absolute;
     top: 0;
@@ -115,7 +114,6 @@ body {
     z-index: 1;
 }
 
-/* Contenido del texto sobre la imagen */
 .hero-content {
     position: relative;
     z-index: 2;
@@ -140,7 +138,7 @@ body {
     text-shadow: 0px 2px 8px rgba(0,0,0,0.6);
 }
 
-/* Botón Get Started estilo Grayscale */
+/* Botón Get Started */
 .btn-get-started {
     background-color: var(--turquoise-color);
     color: #ffffff;
@@ -160,7 +158,7 @@ body {
     transform: translateY(-3px);
 }
 
-/* --- VENTANA MODAL (LOGIN) --- */
+/* --- 3. VENTANA MODAL (LOGIN INTERACTIVO) --- */
 .modal {
     position: fixed;
     top: 0;
@@ -206,11 +204,25 @@ input { width: 100%; padding: 0.75rem; box-sizing: border-box; border: 1px solid
 
 .test-credentials { margin-top: 1.5rem; font-size: 0.85rem; color: #888; background: #15151a; padding: 0.5rem; border-radius: 5px; }
 
-/* --- ESTILOS DE LA TIENDA --- */
+/* --- 4. ESTILOS DE LA TIENDA --- */
 .navbar { display: flex; justify-content: space-between; align-items: center; background-color: #111; padding: 1rem 2rem; border-bottom: 3px solid var(--turquoise-color); }
 .container { padding: 2rem; max-width: 1200px; margin: auto; }
 .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 3rem; }
-.product-card { background-color: var(--card-bg); border-radius: 8px; padding: 1rem; text-align: center; border: 1px solid #333; }
+
+.product-card { 
+    background-color: rgba(42, 42, 53, 0.85) !important; 
+    backdrop-filter: blur(5px); 
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px; 
+    padding: 1rem; 
+    text-align: center; 
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+}
+
 .product-card img { max-width: 100%; height: 180px; object-fit: contain; border-radius: 4px; }
 .admin-form .form-row { display: flex; gap: 1rem; flex-wrap: wrap; background: #15151a; padding: 1rem; border-radius: 6px; }
 .admin-form input { flex: 1; min-width: 150px; }
@@ -218,25 +230,10 @@ input { width: 100%; padding: 0.75rem; box-sizing: border-box; border: 1px solid
 .cart-item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #333; }
 .btn-sm { background: var(--danger); border: none; padding: 0.5rem 1rem; color: white; border-radius: 4px; cursor: pointer;}
 
-/* --- FONDO CON IMAGEN PARA LA TIENDA --- */
+/* --- 5. FONDO CON IMAGEN ASIGNADA PARA LA TIENDA --- */
 body.tienda-body {
-    background-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.92)), 
-                      url('https://images.unsplash.com/photo-1597290282695-edc43d0e7129?q=80&w=1600') !important;
-    background-attachment: fixed; /* Hace que el fondo se quede quieto mientras bajas */
-    background-position: center center;
-    background-repeat: no-repeat;
-    background-size: cover;
-}
-
-/* Ajuste opcional para que las tarjetas de los productos resalten más sobre el nuevo fondo */
-.product-card {
-    background-color: rgba(42, 42, 53, 0.85) !important; /* Volvemos el fondo un poco transparente */
-    backdrop-filter: blur(5px); /* Efecto de cristal esmerilado detrás de la tarjeta */
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.product-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+    background: linear-gradient(rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.90)), 
+                url('https://images.unsplash.com/photo-1597290282695-edc43d0e7129?q=80&w=1600') no-repeat center center / cover !important;
+    background-attachment: fixed !important;
+    min-height: 100vh;
 }
