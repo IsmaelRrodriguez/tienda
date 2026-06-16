@@ -615,9 +615,9 @@ body.tienda-body {
 }
 
 .scrollspy-products-container {
-    height: 75vh;               /* Altura fija para el scroll interno */
-    overflow-y: auto;           /* Habilita el scroll vertical */
-    position: relative;         /* ¡CRÍTICO! Requerido para que Scrollspy calcule bien las posiciones */
+    height: 75vh;               
+    overflow-y: auto;           
+    position: relative;         
     padding-right: 10px;
 }
 
@@ -628,4 +628,153 @@ body.tienda-body {
 .scrollspy-products-container::-webkit-scrollbar-thumb {
     background-color: var(--turquoise-color);
     border-radius: 3px;
+}
+
+/* ==========================================================================
+   AGREGADO: ESTILOS RESPONSIVOS (MEDIA QUERIES)
+   No altera el comportamiento actual, solo adapta las vistas a Móvil y Tablet
+   ========================================================================== */
+
+/* 📱 DISPOSITIVOS MÓVILES (Pantallas de 768px o menos) */
+@media (max-width: 768px) {
+    
+    /* --- 1. LANDING PAGE (index.html) --- */
+    .landing-nav .nav-container {
+        padding: 0 1rem;
+    }
+    
+    .landing-nav .nav-links {
+        gap: 0.5rem;
+    }
+    
+    .landing-nav .nav-links a {
+        font-size: 0.85rem; /* Textos de navegación un poco más pequeños en celular */
+    }
+    
+    .hero-content .hero-title {
+        font-size: 2.2rem; /* Título principal más cómodo para celulares */
+        letter-spacing: 2px;
+    }
+    
+    .hero-content .hero-subtitle {
+        font-size: 1rem;
+        padding: 0 10px;
+    }
+    
+    /* Modal de Login en celular */
+    .login-container {
+        width: 90%;
+        padding: 1.5rem;
+        margin: 10px;
+    }
+
+    /* --- 2. TIENDA (tienda.html) --- */
+    
+    /* El carrusel adapta su altura para no romper las proporciones de las imágenes */
+    .carousel-img {
+        height: 250px !important; /* Altura reducida ideal para pantallas verticales */
+    }
+    
+    .carousel-caption {
+        padding: 8px !important;
+        left: 5% !important;
+        right: 5% !important;
+    }
+    
+    .carousel-caption h5 {
+        font-size: 1rem;
+    }
+    
+    .carousel-caption p {
+        font-size: 0.8rem;
+    }
+
+    /* Distribución de la tienda: El menú lateral pasa arriba y el catálogo abajo */
+    .tienda-body .container-fluid .row {
+        flex-direction: column;
+    }
+    
+    /* El contenedor del menú de categorías ocupa el ancho completo */
+    .tienda-body .col-md-3 {
+        width: 100% !important;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* El contenedor de los bloques de productos ocupa el ancho completo */
+    .tienda-body .col-md-9 {
+        width: 100% !important;
+    }
+    
+    /* Menú de categorías: cambia de lista vertical a botones horizontales con scroll */
+    .list-group-custom {
+        display: flex !important;
+        flex-direction: row !important;
+        overflow-x: auto; /* Permite deslizar las categorías de izquierda a derecha con el dedo */
+        white-space: nowrap;
+        border-radius: 6px;
+    }
+    
+    .list-group-custom .list-group-item {
+        border-bottom: none !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+        flex: 0 0 auto;
+        padding: 0.7rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .list-group-custom .list-group-item:hover,
+    .list-group-custom .list-group-item.active {
+        padding-left: 1rem !important; /* Evita el desplazamiento brusco en móvil */
+    }
+
+    /* Cuadrícula de productos: adaptativa para evitar desbordamientos */
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; 
+        gap: 12px !important; /* Tarjetas más compactas en celular (caben 2 por fila perfectamente) */
+    }
+    
+    .product-card {
+        padding: 10px !important;
+    }
+    
+    .product-card img {
+        height: 120px !important; /* Reduce la imagen para que se vea estético */
+    }
+    
+    .product-card h3 {
+        font-size: 0.95rem !important;
+        margin: 8px 0 4px 0 !important;
+    }
+    
+    .product-card .price {
+        font-size: 0.85rem !important;
+        margin-bottom: 8px !important;
+    }
+    
+    .product-card .btn {
+        font-size: 0.8rem !important;
+        padding: 6px 4px !important;
+    }
+
+    /* Panel del Carrito / Panel de Administración */
+    .cart-section, #admin-panel {
+        padding: 15px !important;
+    }
+}
+
+/* TABLETS (Pantallas entre 769px y 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .hero-content .hero-title {
+        font-size: 3rem;
+    }
+    
+    .carousel-img {
+        height: 320px !important; /* Altura intermedia para tablets */
+    }
+    
+    /* En tablets las tarjetas se acomodan en 3 columnas estables */
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+        gap: 15px !important;
+    }
 }
