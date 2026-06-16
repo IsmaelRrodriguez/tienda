@@ -32,27 +32,118 @@ const defaultProducts = [
 let products = [];
 
 // ==========================================
-// 2. CONTROL DE ACCESO Y VISTAS (ROLES)
+// CONTROL DE ACCESOS Y VISTAS DE ROLES
 // ==========================================
 if (!currentUser) {
-    window.location.href = "index.html";
+    window.location.replace("index.html");
 } else {
-    const welcomeUserSpan = document.getElementById("welcome-user");
-    if (welcomeUserSpan) {
-        welcomeUserSpan.textContent = currentUser.email;
-    }
+    document.addEventListener("DOMContentLoaded", () => {
+        const adminPanel = document.getElementById("admin-panel");
+        const adminUsersPanel = document.getElementById("admin-users-panel");
+        const clientPanel = document.getElementById("client-panel");
+        const userNavLabel = document.getElementById("user-role-label");
 
-    const adminPanel = document.getElementById("admin-panel");
-    const clientPanel = document.getElementById("client-panel");
+        if (userNavLabel) {
+            userNavLabel.textContent = `${currentUser.email} (${currentUser.role.toUpperCase()})`;
+        }
 
-    if (currentUser.role === "admin") {
-        if (adminPanel) adminPanel.classList.remove("hidden");
-        if (clientPanel) clientPanel.classList.add("hidden");
-    } else {
-        if (adminPanel) adminPanel.classList.add("hidden");
-        if (clientPanel) clientPanel.classList.remove("hidden");
-    }
+        // Escuchamos el rol del usuario logueado directamente desde Firebase en tiempo real
+        db.ref("usuarios/" + currentUser.uid + "/role").on("value", (snapshot) => {
+            const serverRole = snapshot.val() || currentUser.role;
+            
+            // Si el administrador nos cambió el rol desde el panel, actualizamos la sesión local
+            if (serverRole !== currentUser.role) {
+                currentUser.role = serverRole;
+                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                window.location.reload(); // Recarga para aplicar los cambios de vista
+                return;
+            }
+
+            // Gestionar visibilidad de paneles según el rol definitivo
+            if (serverRole === "admin") {
+                if (adminPanel) adminPanel.classList.remove("hidden");
+                if (adminUsersPanel) adminUsersPanel.classList.remove("hidden");
+                if (clientPanel) clientPanel.classList.add("hidden");
+                cargarUsuariosYRoles(); // Llama a la función de la tabla de usuarios
+            } else {
+                if (adminPanel) adminPanel.classList.add("hidden");
+                if (adminUsersPanel) adminUsersPanel.classList.add("hidden");
+                if (clientPanel) clientPanel.classList.remove("hidden");
+            }
+        });
+    });
 }
+
+// ==========================================
+// GESTIÓN DE USUARIOS Y CAMBIO DE ROLES (NUEVO)
+// ==========================================
+function cargarUsuariosYRoles() {
+    const tableBody = document.getElementById("users-table-body");
+    if (!tableBody) return;
+
+    // Escuchar el nodo 'usuarios' en Firebase Realtime Database
+    db.ref("usuarios").on("value", (snapshot) => {
+        tableBody.innerHTML = "";
+        const usuarios = snapshot.val();
+
+        if (usuarios) {
+            Object.keys(usuarios).map(uid => {
+                const user = usuarios[uid];
+                const fecha = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Predefinido";
+                
+                // Definir el color del badge según el rol
+                const badgeClass = user.role === "admin" ? "bg-danger" : "bg-info";
+                const botonTexto = user.role === "admin" ? "Cambiar a Cliente" : "Hacer Administrador";
+                const botonClass = user.role === "admin" ? "btn-outline-info" : "btn-outline-danger";
+
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td><strong>${user.email}</strong></td>
+                    <td><span class="badge ${badgeClass}">${user.role.toUpperCase()}</span></td>
+                    <td><span class="text-white-50 small">${fecha}</span></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm ${botonClass}" onclick="cambiarRolUsuario('${uid}', '${user.role}')">
+                            ${botonTexto}
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        } else {
+            tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-white-50">No hay usuarios registrados en la base de datos.</td></tr>`;
+        }
+    });
+}
+
+// Función global para actualizar el rol en Firebase
+window.cambiarRolUsuario = function(uid, rolActual) {
+    const nuevoRol = rolActual === "admin" ? "client" : "admin";
+    
+    // Evitar que el administrador se quite los permisos a sí mismo por error
+    if (currentUser.uid === uid || currentUser.email === "admin@borrachon.com") {
+        if (currentUser.uid === uid) {
+            alert("⚠️ No puedes cambiar tu propio rol de administrador.");
+            return;
+        }
+    }
+
+    db.ref("usuarios/" + uid).update({
+        role: nuevoRol
+    })
+    .then(() => {
+        alert(`¡Rol actualizado con éxito a ${nuevoRol.toUpperCase()}!`);
+        
+        // Si el administrador actual modificó su propia sesión secundaria, actualizamos
+        if(currentUser.uid === uid) {
+            currentUser.role = nuevoRol;
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            window.location.reload();
+        }
+    })
+    .catch((error) => {
+        console.error("Error al actualizar el rol:", error);
+    });
+};
 
 // ==========================================
 // 3. RENDERIZADO DEL INTERFAZ DE USUARIO
@@ -350,23 +441,28 @@ if (searchInput) {
     });
 }
 
-// CERRAR SESIÓN
+// ==========================================
+// CERRAR SESIÓN (OPTIMIZADO PARA EVITAR BUCLES)
+// ==========================================
 const logoutBtn = document.getElementById("logout-btn");
 if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
+    logoutBtn.addEventListener("click", (e) => {
+        e.preventDefault(); // Evita cualquier comportamiento por defecto del enlace/botón
+        
+        // 1. Limpiamos inmediatamente el almacenamiento local
         sessionStorage.removeItem('currentUser');
-        window.location.href = "index.html";
-    });
-}
-
-const selectCategory = document.getElementById("prod-category");
-if (selectCategory) {
-    selectCategory.addEventListener("change", function () {
-        if (this.value !== "") {
-            this.classList.add("selected-valid");
-        } else {
-            this.classList.remove("selected-valid");
-        }
+        
+        // 2. Cerramos sesión en los servidores de Firebase
+        firebase.auth().signOut()
+            .then(() => {
+                // Redirección limpia reemplazando el historial para que no pueda dar "atrás"
+                window.location.replace("index.html");
+            })
+            .catch((error) => {
+                console.error("Error al cerrar sesión en Firebase Auth:", error);
+                // Forzar salida si falla la red
+                window.location.replace("index.html");
+            });
     });
 }
 
@@ -374,6 +470,18 @@ if (selectCategory) {
 // 8. INICIALIZACIÓN CONECTADA A LA NUBE
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
+    
+    // MODIFICACIÓN: Mostrar saludo con Nombre y Apellido si existen en la sesión
+    const welcomeTextElement = document.getElementById("welcome-user-text");
+    if (welcomeTextElement && currentUser) {
+        if (currentUser.firstName && currentUser.lastName) {
+            welcomeTextElement.textContent = `Hola, ${currentUser.firstName} ${currentUser.lastName}`;
+        } else {
+            // Fallback por si inicia sesión con un correo viejo sin registro de nombre completo
+            welcomeTextElement.textContent = `Hola, ${currentUser.email.split('@')[0]}`;
+        }
+    }
+
     // Escuchar cambios en internet en tiempo real
     db.ref("productos").on("value", (snapshot) => {
         const data = snapshot.val();
