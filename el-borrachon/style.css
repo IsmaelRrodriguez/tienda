@@ -1,13 +1,20 @@
-/* --- 1. REINICIO DE ESTILOS (Global Reset) --- */
+/* ==========================================================================
+   1. REINICIO DE ESTILOS (Global Reset) & VARIABLES
+   ========================================================================== */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 20px; /* Evita que la navbar o los bloques queden pegados al borde superior */
+}
+
 :root {
     --primary-color: #ff9f43;
-    --turquoise-color: #64b3a5; /* El color verde agua del botón Get Started */
+    --turquoise-color: #64b3a5; 
     --dark-bg: #1e1e24;
     --card-bg: #2a2a35;
     --text-color: #ffffff;
@@ -22,9 +29,9 @@ body {
     overflow-x: hidden;
 }
 
-/* --- 2. ESTILO LANDING / GRAYSCALE STYLE --- */
-
-/* Barra de navegación superior */
+/* ==========================================================================
+   2. ESTILO LANDING / GRAYSCALE STYLE
+   ========================================================================== */
 .landing-nav {
     position: absolute;
     top: 0;
@@ -44,7 +51,6 @@ body {
     padding: 0 2rem;
 }
 
-/* Control del color del logo */
 .nav-logo, .nav-logo:visited {
     color: #ffffff !important;
     text-decoration: none;
@@ -59,7 +65,6 @@ body {
     gap: 2rem;
 }
 
-/* Control de los enlaces superiores (Evita que se pongan azules o morados) */
 .nav-links a, .nav-links a:visited {
     color: rgba(255, 255, 255, 0.7) !important;
     text-decoration: none;
@@ -88,7 +93,6 @@ body {
     color: black;
 }
 
-/* Sección Hero (Pantalla Completa de Inicio) */
 .hero-section {
     position: relative;
     height: 100vh;
@@ -103,7 +107,6 @@ body {
     text-align: center;
 }
 
-/* Capa oscura protectora de texto sobre la imagen */
 .hero-overlay {
     position: absolute;
     top: 0;
@@ -138,7 +141,6 @@ body {
     text-shadow: 0px 2px 8px rgba(0,0,0,0.6);
 }
 
-/* Botón Get Started */
 .btn-get-started {
     background-color: var(--turquoise-color);
     color: #ffffff;
@@ -158,7 +160,9 @@ body {
     transform: translateY(-3px);
 }
 
-/* --- 3. VENTANA MODAL (LOGIN INTERACTIVO) --- */
+/* ==========================================================================
+   3. VENTANA MODAL (LOGIN INTERACTIVO) & REGISTRO
+   ========================================================================== */
 .modal {
     position: fixed;
     top: 0;
@@ -204,36 +208,424 @@ input { width: 100%; padding: 0.75rem; box-sizing: border-box; border: 1px solid
 
 .test-credentials { margin-top: 1.5rem; font-size: 0.85rem; color: #888; background: #15151a; padding: 0.5rem; border-radius: 5px; }
 
-/* --- 4. ESTILOS DE LA TIENDA --- */
-.navbar { display: flex; justify-content: space-between; align-items: center; background-color: #111; padding: 1rem 2rem; border-bottom: 3px solid var(--turquoise-color); }
-.container { padding: 2rem; max-width: 1200px; margin: auto; }
-.products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 3rem; }
-
-.product-card { 
-    background-color: rgba(30, 30, 36, 0.93) !important; /* Un gris oscuro sólido para proteger el texto */
-    backdrop-filter: blur(5px); 
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 8px; 
-    padding: 1rem; 
-    text-align: center; 
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-.product-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+.login-body, .masthead {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    padding: 15rem 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.7) 100%), 
+                url('https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=1200') no-repeat center center;
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
 }
 
-.product-card img { max-width: 100%; height: 180px; object-fit: contain; border-radius: 4px; }
-.admin-form .form-row { display: flex; gap: 1rem; flex-wrap: wrap; background: #15151a; padding: 1rem; border-radius: 6px; }
-.admin-form input { flex: 1; min-width: 150px; }
-.cart-section { background-color: #15151a; padding: 1.5rem; border-radius: 8px; border-top: 4px solid var(--success); }
-.cart-item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #333; }
-.btn-sm { background: var(--danger); border: none; padding: 0.5rem 1rem; color: white; border-radius: 4px; cursor: pointer;}
+/* ==========================================================================
+   4. ESTILOS DE LA NAVBAR COMPACTA (TIENDA)
+   ========================================================================== */
+.bg-dark-custom {
+    background-color: #0f0f14 !important;
+    border-bottom: 2px solid var(--turquoise-color);
+    padding-top: 0.4rem !important;
+    padding-bottom: 0.4rem !important;
+}
 
-/* --- 5. FONDO CON IMAGEN ASIGNADA PARA LA TIENDA --- */
+.logo-text {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1.3rem;
+    letter-spacing: 0.5px;
+}
+
+.user-welcome-text {
+    color: rgba(255, 255, 255, 0.75) !important;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.search-nav-input {
+    background-color: #1a1a24 !important;
+    border: 1px solid #333 !important;
+    color: #fff !important;
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+}
+.search-nav-input::placeholder { color: #666; }
+
+.btn-logout-custom {
+    background-color: var(--danger) !important;
+    color: white !important;
+    font-size: 0.85rem !important;
+    font-weight: 600;
+    padding: 0.4rem 1rem !important;
+    border-radius: 6px;
+    border: none;
+    white-space: nowrap;
+    transition: background 0.2s;
+}
+.btn-logout-custom:hover { background-color: #e05656 !important; }
+
+/* ==========================================================================
+   5. CONTENEDORES Y ESTRUCTURA DE LA TIENDA
+   ========================================================================== */
 body.tienda-body {
     background: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.75)), 
                 url('https://images.unsplash.com/photo-1597290282695-edc43d0e7129?q=80&w=1600') no-repeat center center / cover !important;
     background-attachment: fixed !important;
     min-height: 100vh;
+}
+
+.container { 
+    padding: 2rem; 
+    max-width: 1200px; 
+    margin: auto; 
+}
+
+.section-title { 
+    font-size: 1.25rem; 
+    font-weight: 600; 
+    color: #fff; 
+}
+
+/* Rejilla de productos */
+.products-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important; 
+    gap: 1rem !important; 
+    margin-bottom: 1.5rem !important; 
+}
+
+/* Tarjetas */
+.product-card { 
+    background-color: rgba(30, 30, 36, 0.93) !important;
+    backdrop-filter: blur(5px); 
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 10px; 
+    padding: 0.9rem; 
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    text-align: center; 
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+}
+
+.product-card img { 
+    width: 100%; 
+    height: 130px; 
+    object-fit: contain; 
+    margin-bottom: 0.5rem;
+    background-color: rgba(0,0,0,0.1);
+    border-radius: 6px;
+    padding: 5px;
+}
+
+.product-card h3 {
+    font-size: 1rem;
+    margin: 0.3rem 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.product-card .price {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--turquoise-color);
+    margin-bottom: 0.6rem;
+}
+
+.product-card .btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    border-radius: 5px;
+    margin-top: 4px;
+}
+
+.admin-form .form-row { display: flex; gap: 1rem; flex-wrap: wrap; background: #15151a; padding: 1rem; border-radius: 6px; }
+.admin-form input { flex: 1; min-width: 150px; }
+
+.cart-section { 
+    background-color: #14141a; 
+    padding: 1.5rem; 
+    border-radius: 10px; 
+    border-top: 4px solid var(--success); 
+}
+.section-title-cart { font-size: 1.15rem; font-weight: 600; }
+.cart-item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #333; }
+.total-price-text { color: var(--success); font-weight: bold; }
+
+.btn-checkout {
+    background-color: var(--turquoise-color);
+    color: white;
+    font-size: 0.9rem;
+    padding: 0.5rem 1.5rem;
+    width: auto;
+}
+.btn-sm { background: var(--danger); border: none; padding: 0.5rem 1rem; color: white; border-radius: 4px; cursor: pointer;}
+
+/* ==========================================================================
+   6. CARRUSEL TIPO BANNER (COMPACTO)
+   ========================================================================== */
+.carousel {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.carousel-inner {
+    position: relative;
+    width: 100%;
+    height: 220px !important;
+}
+
+.carousel-item {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+    z-index: 1;
+}
+
+.carousel-item.active {
+    position: relative;
+    opacity: 1;
+    z-index: 2;
+}
+
+.carousel-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.5);
+}
+
+.carousel-caption {
+    position: absolute;
+    right: 0;
+    bottom: 0rem !important;
+    left: 0;
+    z-index: 10;
+    padding: 1.5rem 1.25rem 1rem 1.25rem;
+    color: #fff;
+    text-align: center;
+    background: linear-gradient(transparent, rgba(0,0,0,0.85));
+}
+
+.carousel-caption h3 {
+    font-size: 1.4rem;
+    margin-bottom: 0.3rem;
+    color: var(--turquoise-color);
+    font-weight: 600;
+}
+.carousel-caption p { font-size: 0.85rem; margin: 0; }
+
+.carousel-control-prev, .carousel-control-next {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 10%;
+    background: none;
+    border: 0;
+    opacity: 0.4;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+.carousel-control-prev:hover, .carousel-control-next:hover { opacity: 1; }
+.carousel-control-prev { left: 0; }
+.carousel-control-next { right: 0; }
+
+.carousel-control-prev-icon-custom::after { content: '◀'; font-size: 1.2rem; color: var(--turquoise-color); }
+.carousel-control-next-icon-custom::after { content: '▶'; font-size: 1.2rem; color: var(--turquoise-color); }
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+/* ==========================================================================
+   7. TARJETA DE DETALLE MODAL
+   ========================================================================== */
+#details-modal-content {
+    background: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card {
+    width: 18rem;
+    background-color: var(--card-bg) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    text-align: left;
+}
+
+.card-img-top {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    background-color: #15151a;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.card-text {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 1.25rem;
+    line-height: 1.4;
+}
+
+.btn-primary {
+    display: inline-block;
+    background-color: var(--turquoise-color) !important;
+    color: white !important;
+    text-decoration: none;
+    text-align: center;
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    font-weight: bold;
+    width: 100%;
+    border: none;
+    transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: #529b8f !important;
+}
+
+/* Selector Custom */
+.form-select-custom {
+    flex: 1; 
+    min-width: 150px;
+    padding: 0.75rem; 
+    border: 1px solid #444 !important;
+    background-color: #15151a !important;
+    color: rgba(255, 255, 255, 0.3) !important; 
+    border-radius: 5px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.3s, color 0.3s;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%2364b3a5' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.75rem center !important;
+    background-size: 8px 10px !important;
+    padding-right: 2rem !important;
+}
+
+.form-select-custom:focus {
+    border-color: var(--turquoise-color) !important;
+    box-shadow: none !important;
+}
+
+.form-select-custom option {
+    background-color: #15151a !important;
+    color: #ffffff !important;
+}
+
+.form-select-custom option:disabled {
+    color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.form-select-custom.selected-valid {
+    color: #ffffff !important;
+}
+
+/* ==========================================================================
+   8. ESTILIZACIÓN DEL FILTRO LATERAL (SCROLLSPY CUSTOM)
+   ========================================================================== */
+.list-group-custom {
+    background-color: #15151a !important;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.list-group-custom .list-group-item {
+    background-color: #15151a !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    padding: 0.85rem 1.2rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.list-group-custom .list-group-item:hover {
+    background-color: #1e1e26 !important;
+    color: #ffffff !important;
+    padding-left: 1.5rem; 
+}
+
+.list-group-custom .list-group-item.active {
+    background-color: var(--turquoise-color) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    border: none;
+    padding-left: 1.5rem;
+}
+
+.category-block-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #ffffff;
+    border-left: 3px solid var(--turquoise-color);
+    padding-left: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.scrollspy-products-container {
+    height: 75vh;               /* Altura fija para el scroll interno */
+    overflow-y: auto;           /* Habilita el scroll vertical */
+    position: relative;         /* ¡CRÍTICO! Requerido para que Scrollspy calcule bien las posiciones */
+    padding-right: 10px;
+}
+
+/* Opcional: Hace que el scroll se vea más limpio */
+.scrollspy-products-container::-webkit-scrollbar {
+    width: 6px;
+}
+.scrollspy-products-container::-webkit-scrollbar-thumb {
+    background-color: var(--turquoise-color);
+    border-radius: 3px;
 }
