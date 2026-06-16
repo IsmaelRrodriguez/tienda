@@ -37,7 +37,7 @@
     </header>
 
     <main class="container my-3">
-        <div id="carouselExampleFade" class="carousel slide carousel-fade mb-4">
+        <div id="carouselExampleAutoplaying" class="carousel slide" data-bs-ride="carousel" data-bs-interval="20000">
             <div class="carousel-inner" id="carousel-dynamic-inner"></div>
             <button class="carousel-control-prev" type="button" id="carousel-prev-btn">
                 <span class="carousel-control-prev-icon-custom" aria-hidden="true"></span>
@@ -82,7 +82,7 @@
                         <button class="list-group-item list-group-item-action active text-start" id="tab-todas-btn" data-bs-toggle="tab" data-bs-target="#cat-todas" type="button" role="tab" aria-controls="cat-todas" aria-selected="true"> Todas las Bebidas</button>
                         <button class="list-group-item list-group-item-action text-start" id="tab-cerveza-btn" data-bs-toggle="tab" data-bs-target="#cat-cerveza" type="button" role="tab" aria-controls="cat-cerveza" aria-selected="false"> Cervezas</button>
                         <button class="list-group-item list-group-item-action text-start" id="tab-ron-btn" data-bs-toggle="tab" data-bs-target="#cat-ron" type="button" role="tab" aria-controls="cat-ron" aria-selected="false"> Rones</button>
-                        <button class="list-group-item list-group-item-action text-start" id="tab-whisky-btn" data-bs-toggle="tab" data-bs-target="#cat-whisky" type="button" role="tab" aria-controls="cat-whisky" aria-selected="false"> Whiskies</button>
+                        <button class="list-group-item list-group-item-action text-start" id="tab-whisky-btn" data-bs-toggle="tab" data-bs-target="#cat-whisky" type="button" role="tab" aria-controls="cat-whisky" aria-selected="false"> Whiskyes</button>
                         <button class="list-group-item list-group-item-action text-start" id="tab-vodka-btn" data-bs-toggle="tab" data-bs-target="#cat-vodka" type="button" role="tab" aria-controls="cat-vodka" aria-selected="false"> Vodkas</button>
                         <button class="list-group-item list-group-item-action text-start" id="tab-tequila-btn" data-bs-toggle="tab" data-bs-target="#cat-tequila" type="button" role="tab" aria-controls="cat-tequila" aria-selected="false"> Tequilas</button>
                         <button class="list-group-item list-group-item-action text-start" id="tab-otros-btn" data-bs-toggle="tab" data-bs-target="#cat-otros" type="button" role="tab" aria-controls="cat-otros" aria-selected="false"> Otros</button>
@@ -147,6 +147,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
