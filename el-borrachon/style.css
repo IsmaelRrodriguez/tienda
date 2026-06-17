@@ -778,3 +778,15 @@ body.tienda-body {
         gap: 15px !important;
     }
 }
+
+.btn-admin-nav {
+    background-color: transparent;
+    color: #ffc107; /* Color amarillo/dorado de Bootstrap */
+    border: 1px solid #ffc107;
+    transition: all 0.3s ease;
+}
+
+.btn-admin-nav:hover, .btn-admin-nav.active {
+    background-color: #ffc107;
+    color: #111 !important;
+}

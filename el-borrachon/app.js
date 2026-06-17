@@ -40,6 +40,7 @@ if (!currentUser) {
     document.addEventListener("DOMContentLoaded", () => {
         const adminPanel = document.getElementById("admin-panel");
         const adminUsersPanel = document.getElementById("admin-users-panel");
+        const adminTopNav = document.getElementById("admin-top-nav");
         const clientPanel = document.getElementById("client-panel");
         const userNavLabel = document.getElementById("user-role-label");
 
@@ -61,11 +62,74 @@ if (!currentUser) {
 
             // Gestionar visibilidad de paneles según el rol definitivo
             if (serverRole === "admin") {
-                if (adminPanel) adminPanel.classList.remove("hidden");
-                if (adminUsersPanel) adminUsersPanel.classList.remove("hidden");
+                if (adminTopNav) adminTopNav.classList.remove("hidden");
                 if (clientPanel) clientPanel.classList.add("hidden");
                 cargarUsuariosYRoles(); // Llama a la función de la tabla de usuarios
+
+                // --- INICIO DE LA MODIFICACIÓN INDENTADA: MANEJO DE VISTAS TABS PARA ADMIN ---
+                const catalogSection = document.getElementById("catalog-section");
+                const carouselSection = document.getElementById("carouselExampleAutoplaying");
+
+                // Capturar los botones del administrador mediante sus href correspondientes
+                const btnCatalog = document.querySelector('a[href="#catalog-section"]');
+                const btnUsers = document.querySelector('a[href="#admin-users-panel"]');
+                const btnAddProducts = document.querySelector('a[href="#admin-panel"]');
+
+                function resetActiveAdminButtons() {
+                    [btnCatalog, btnUsers, btnAddProducts].forEach(btn => {
+                        if (btn) btn.classList.remove('active');
+                    });
+                }
+
+                // Configuración inicial por defecto cuando carga como admin (ver Catálogo)
+                if (btnCatalog) btnCatalog.classList.add('active');
+                if (catalogSection) catalogSection.classList.remove('hidden');
+                if (carouselSection) carouselSection.classList.remove('hidden');
+                if (adminUsersPanel) adminUsersPanel.classList.add('hidden');
+                if (adminPanel) adminPanel.classList.add('hidden');
+
+                // EVENTO: Clic en "Catálogo"
+                if (btnCatalog) {
+                    btnCatalog.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        resetActiveAdminButtons();
+                        btnCatalog.classList.add('active');
+                        if (catalogSection) catalogSection.classList.remove('hidden');
+                        if (carouselSection) carouselSection.classList.remove('hidden');
+                        if (adminUsersPanel) adminUsersPanel.classList.add('hidden');
+                        if (adminPanel) adminPanel.classList.add('hidden');
+                    });
+                }
+
+                // EVENTO: Clic en "Usuarios"
+                if (btnUsers) {
+                    btnUsers.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        resetActiveAdminButtons();
+                        btnUsers.classList.add('active');
+                        if (adminUsersPanel) adminUsersPanel.classList.remove('hidden');
+                        if (catalogSection) catalogSection.classList.add('hidden');
+                        if (carouselSection) carouselSection.classList.add('hidden');
+                        if (adminPanel) adminPanel.classList.add('hidden');
+                    });
+                }
+
+                // EVENTO: Clic en "Agregar Bebidas"
+                if (btnAddProducts) {
+                    btnAddProducts.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        resetActiveAdminButtons();
+                        btnAddProducts.classList.add('active');
+                        if (adminPanel) adminPanel.classList.remove('hidden');
+                        if (catalogSection) catalogSection.classList.add('hidden');
+                        if (carouselSection) carouselSection.classList.add('hidden');
+                        if (adminUsersPanel) adminUsersPanel.classList.add('hidden');
+                    });
+                }
+                // --- FIN DE LA MODIFICACIÓN INDENTADA ---
+
             } else {
+                if (adminTopNav) adminTopNav.classList.add("hidden");
                 if (adminPanel) adminPanel.classList.add("hidden");
                 if (adminUsersPanel) adminUsersPanel.classList.add("hidden");
                 if (clientPanel) clientPanel.classList.remove("hidden");
@@ -149,13 +213,11 @@ window.cambiarRolUsuario = function(uid, rolActual) {
 // 3. RENDERIZADO DEL INTERFAZ DE USUARIO
 // ==========================================
 
-// Pintar el Carrusel dinámico con los últimos 4 licores de internet
 // Pintar el Carrusel dinámico con los últimos licores de internet
 function renderCarousel() {
     const carouselInner = document.getElementById("carousel-dynamic-inner");
     if (!carouselInner) return;
 
-    // CORRECCIÓN AQUÍ: Limpiamos con comillas vacías, SIN el "0"
     carouselInner.innerHTML = "";
 
     // Si no hay productos en la base de datos, salimos de la función
@@ -192,6 +254,7 @@ function renderProducts(productsList) {
         Ron: document.getElementById("grid-ron"),
         Vodka: document.getElementById("grid-vodka"),
         Cerveza: document.getElementById("grid-cerveza"),
+        Whisky: document.getElementById("grid-whisky"),
         Tequila: document.getElementById("grid-tequila"),
         Otros: document.getElementById("grid-otros"),
         Todas: document.getElementById("grid-todas")
@@ -237,7 +300,6 @@ const productForm = document.getElementById("product-form");
 if (productForm) {
     productForm.addEventListener("submit", (e) => {
         e.preventDefault();
-
         const nameVal = document.getElementById("prod-name").value.trim();
         const priceVal = parseFloat(document.getElementById("prod-price").value);
         const imgVal = document.getElementById("prod-img").value.trim();
@@ -248,12 +310,7 @@ if (productForm) {
             return;
         }
 
-        const newProduct = {
-            name: nameVal,
-            price: priceVal,
-            img: imgVal,
-            category: catVal
-        };
+        const newProduct = { name: nameVal, price: priceVal, img: imgVal, category: catVal };
 
         // Guardado directo en internet usando Firebase
         db.ref("productos").push(newProduct)
