@@ -101,17 +101,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // REGISTRO / LOGIN CON GOOGLE
+    // REGISTRO / LOGIN CON GOOGLE CORREGIDO PARA GITHUB PAGES
     if (btnGoogleAuth) {
         btnGoogleAuth.addEventListener("click", () => {
             const provider = new firebase.auth.GoogleAuthProvider();
             
-            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
             auth.signInWithPopup(provider)
                 .then((result) => {
                     const user = result.user;
                     
-                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    // Extraer de forma segura el nombre de Google para evitar ReferenceError
                     const displayName = user.displayName || "Usuario Google";
                     const nameParts = displayName.split(" ");
                     const firstName = nameParts[0] || "Usuario";
@@ -120,18 +119,18 @@ document.addEventListener("DOMContentLoaded", () => {
                     // Verificar existencia del usuario en Realtime Database
                     db.ref("usuarios/" + user.uid).once("value")
                         .then((snapshot) => {
-                            let userRole = "client";
+                            let userRole = "client"; // Estandarizado a "client" para evitar conflictos
                             let finalFirstName = firstName;
                             let finalLastName = lastName;
 
                             if (snapshot.exists()) {
                                 const existingData = snapshot.val();
-                                // Validamos tanto 'role' como 'rol' por consistencia
+                                // Soportar tanto 'role' como 'rol' por compatibilidad
                                 userRole = existingData.role || existingData.rol || "client";
                                 finalFirstName = existingData.firstName || firstName;
                                 finalLastName = existingData.lastName || lastName;
                             } else {
-                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                // Si es un usuario de Google nuevo, registrarlo correctamente
                                 db.ref("usuarios/" + user.uid).set({
                                     email: user.email,
                                     role: userRole,
@@ -141,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 });
                             }
 
-                            // Guardar la sesión localmente de forma uniforme
+                            // Guardar la sesión localmente en el sessionStorage
                             sessionStorage.setItem('currentUser', JSON.stringify({
                                 uid: user.uid,
                                 email: user.email,
@@ -150,16 +149,17 @@ document.addEventListener("DOMContentLoaded", () => {
                                 lastName: finalLastName
                             }));
 
-                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            // DETECTAR LA RUTA CORRECTA EN GITHUB PAGES DINÁMICAMENTE
                             const currentPath = window.location.pathname;
                             if (currentPath.includes("/el-borrachon/")) {
+                                // Cambia index.html por tienda.html manteniendo las carpetas de GitHub
                                 window.location.href = currentPath.replace("index.html", "tienda.html");
                             } else {
-                                window.location.href = "tienda.html"; // Fallback para Localhost
+                                window.location.href = "tienda.html"; // Respaldo para Localhost
                             }
                         })
                         .catch((dbErr) => {
-                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            console.error("Error en la base de datos de Firebase:", dbErr);
                             alert("Error en la base de datos: " + dbErr.message);
                         });
                 })
