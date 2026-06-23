@@ -101,69 +101,4089 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ==========================================
-    // LÓGICA DE AUTENTICACIÓN CON GOOGLE (OPTIMIZADA)
-    // ==========================================
-    // ==========================================
-    // LÓGICA DE AUTENTICACIÓN CON GOOGLE
-    // ==========================================
+    // REGISTRO / LOGIN CON GOOGLE
     if (btnGoogleAuth) {
-        btnGoogleAuth.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            // Usamos la propiedad explícita del objeto global firebase cargado
+        btnGoogleAuth.addEventListener("click", () => {
             const provider = new firebase.auth.GoogleAuthProvider();
-
-            firebase.auth().signInWithPopup(provider)
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
                 .then((result) => {
                     const user = result.user;
                     
+                    // Separar el nombre completo que da Google en Nombre y Apellido
                     const displayName = user.displayName || "Usuario Google";
                     const nameParts = displayName.split(" ");
                     const firstName = nameParts[0] || "Usuario";
                     const lastName = nameParts.slice(1).join(" ") || "Google";
 
                     // Verificar existencia del usuario en Realtime Database
-                    db.ref("usuarios/" + user.uid).once("value").then((snapshot) => {
-                        let userRole = "cliente"; 
-                        let finalFirstName = firstName;
-                        let finalLastName = lastName;
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
 
-                        if (snapshot.exists()) {
-                            const existingData = snapshot.val();
-                            userRole = existingData.rol || "cliente";
-                            finalFirstName = existingData.firstName || firstName;
-                            finalLastName = existingData.lastName || lastName;
-                        } else {
-                            // Si es nuevo, lo registramos de forma limpia
-                            db.ref("usuarios/" + user.uid).set({
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
                                 email: user.email,
-                                rol: userRole,
+                                role: userRole,
                                 firstName: finalFirstName,
                                 lastName: finalLastName
-                            });
-                        }
+                            }));
 
-                        // Guardar la sesión localmente
-                        sessionStorage.setItem('currentUser', JSON.stringify({
-                            uid: user.uid,
-                            email: user.email,
-                            rol: userRole,
-                            firstName: finalFirstName,
-                            lastName: finalLastName
-                        }));
-
-                        window.location.href = "tienda.html";
-                    });
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
                 })
                 .catch((error) => {
-                    // ¡CRITICAL! Esto te dirá el código exacto en la consola (F12) si vuelve a fallar
-                    console.error("Error completo de Firebase:", error);
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
                     
-                    if (error.code !== "auth/popup-closed-by-user") {
-                        alert("Error al autenticar con Google: " + traducirError(error.code) + " (" + error.code + ")");
-                    }
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                });
+        });
+    }
+    // REGISTRO / LOGIN CON GOOGLE
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Cambiamos a signInWithRedirect si estás en móvil, o dejamos signInWithPopup para PC
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    // Separar el nombre completo que da Google en Nombre y Apellido
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value")
+                        .then((snapshot) => {
+                            let userRole = "client";
+                            let finalFirstName = firstName;
+                            let finalLastName = lastName;
+
+                            if (snapshot.exists()) {
+                                const existingData = snapshot.val();
+                                // Validamos tanto 'role' como 'rol' por consistencia
+                                userRole = existingData.role || existingData.rol || "client";
+                                finalFirstName = existingData.firstName || firstName;
+                                finalLastName = existingData.lastName || lastName;
+                            } else {
+                                // Si el usuario de Google es completamente nuevo, creamos su perfil
+                                db.ref("usuarios/" + user.uid).set({
+                                    email: user.email,
+                                    role: userRole,
+                                    firstName: finalFirstName,
+                                    lastName: finalLastName,
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+
+                            // Guardar la sesión localmente de forma uniforme
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                role: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            }));
+
+                            // SOLUCIÓN RUTA GITHUB PAGES: Detecta dinámicamente dónde está parada la app
+                            const currentPath = window.location.pathname;
+                            if (currentPath.includes("/el-borrachon/")) {
+                                window.location.href = currentPath.replace("index.html", "tienda.html");
+                            } else {
+                                window.location.href = "tienda.html"; // Fallback para Localhost
+                            }
+                        })
+                        .catch((dbErr) => {
+                            console.error("Error guardando datos del usuario en DB:", dbErr);
+                            alert("Error en la base de datos: " + dbErr.message);
+                        });
+                })
+                .catch((error) => {
+                    console.error("Error completo de Firebase Auth:", error);
+                    alert("Error al autenticar con Google: " + traducirError(error.code));
                 });
         });
     }
