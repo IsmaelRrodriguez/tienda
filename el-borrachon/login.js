@@ -24,19 +24,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const loginModal = document.getElementById("login-modal");
     const showLoginBtn = document.getElementById("show-login-btn");
     const getStartedBtn = document.getElementById("get-started-btn");
-    const closeModalBtn = document.getElementById("close-modal-btn");
+    const closeModalBtn = document.getElementById("close-modal-btn"); // <-- ¡ID de la X Corregido!
     const loginForm = document.getElementById("login-form");
     const confirmPasswordGroup = document.getElementById("confirm-password-group");
+    const btnSubmitAuth = document.getElementById("btn-submit-auth");
+    const toggleAuthModeBtn = document.getElementById("toggle-auth-mode"); // Unificado para evitar error de duplicación
+    const testCredsBox = document.getElementById("test-creds-box");
+    const btnGoogleAuth = document.getElementById("btn-google-auth"); // Botón de Google
     
-    // NUEVOS ELEMENTOS DEL DOM PARA CAPTURAR NOMBRE Y APELLIDO
+    // ELEMENTOS DEL DOM PARA CAPTURAR NOMBRE Y APELLIDO (Mantenidos intactos)
     const registerNameGroup = document.getElementById("register-name-group");
     const registerLastNameGroup = document.getElementById("register-lastname");
     const regFirstNameInput = document.getElementById("reg-firstname");
     const regLastNameInput = document.getElementById("reg-lastname");
-
-    const toggleAuthModeBtn = document.getElementById("toggle-auth-mode");
-    const btnSubmitAuth = document.getElementById("btn-submit-auth");
-    const testCredsBox = document.getElementById("test-creds-box");
 
     // Redirigir si el usuario ya inició sesión previamente
     const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
@@ -98,6 +98,73 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (testCredsBox) testCredsBox.classList.remove("hidden");
             }
+        });
+    }
+
+    // ==========================================
+    // LÓGICA DE AUTENTICACIÓN CON GOOGLE (OPTIMIZADA)
+    // ==========================================
+    // ==========================================
+    // LÓGICA DE AUTENTICACIÓN CON GOOGLE
+    // ==========================================
+    if (btnGoogleAuth) {
+        btnGoogleAuth.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Usamos la propiedad explícita del objeto global firebase cargado
+            const provider = new firebase.auth.GoogleAuthProvider();
+
+            firebase.auth().signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    
+                    const displayName = user.displayName || "Usuario Google";
+                    const nameParts = displayName.split(" ");
+                    const firstName = nameParts[0] || "Usuario";
+                    const lastName = nameParts.slice(1).join(" ") || "Google";
+
+                    // Verificar existencia del usuario en Realtime Database
+                    db.ref("usuarios/" + user.uid).once("value").then((snapshot) => {
+                        let userRole = "cliente"; 
+                        let finalFirstName = firstName;
+                        let finalLastName = lastName;
+
+                        if (snapshot.exists()) {
+                            const existingData = snapshot.val();
+                            userRole = existingData.rol || "cliente";
+                            finalFirstName = existingData.firstName || firstName;
+                            finalLastName = existingData.lastName || lastName;
+                        } else {
+                            // Si es nuevo, lo registramos de forma limpia
+                            db.ref("usuarios/" + user.uid).set({
+                                email: user.email,
+                                rol: userRole,
+                                firstName: finalFirstName,
+                                lastName: finalLastName
+                            });
+                        }
+
+                        // Guardar la sesión localmente
+                        sessionStorage.setItem('currentUser', JSON.stringify({
+                            uid: user.uid,
+                            email: user.email,
+                            rol: userRole,
+                            firstName: finalFirstName,
+                            lastName: finalLastName
+                        }));
+
+                        window.location.href = "tienda.html";
+                    });
+                })
+                .catch((error) => {
+                    // ¡CRITICAL! Esto te dirá el código exacto en la consola (F12) si vuelve a fallar
+                    console.error("Error completo de Firebase:", error);
+                    
+                    if (error.code !== "auth/popup-closed-by-user") {
+                        alert("Error al autenticar con Google: " + traducirError(error.code) + " (" + error.code + ")");
+                    }
+                });
         });
     }
 

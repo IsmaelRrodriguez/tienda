@@ -252,6 +252,7 @@ function renderCarousel() {
 function renderProducts(productsList) {
     const grids = {
         Ron: document.getElementById("grid-ron"),
+        Vino: document.getElementById("grid-vino"),
         Vodka: document.getElementById("grid-vodka"),
         Cerveza: document.getElementById("grid-cerveza"),
         Whisky: document.getElementById("grid-whisky"),

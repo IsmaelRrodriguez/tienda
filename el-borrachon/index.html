@@ -31,7 +31,7 @@
 
     <div id="login-modal" class="modal hidden">
         <div class="login-container">
-            <span class="close-modal" id=\"close-modal-btn\">&times;</span>
+            <span class="close-modal" id="close-modal-btn">&times;</span>
             <h2 id="modal-title">Iniciar Sesión</h2>
             <p id="modal-desc">Introduce tus credenciales para ingresar</p>
         
@@ -58,6 +58,16 @@
                 </div>
                 <button type="submit" class="btn" id="btn-submit-auth">Ingresar</button>
             </form>
+
+            <div style="margin-top: 15px; text-align: center;">
+                <p style="color: rgba(255,255,255,0.4); font-size: 0.85rem; margin-bottom: 10px;">— O también puedes —</p>
+                <button id="btn-google-auth" class="btn" style="background-color: #ffffff; color: #000000; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 5px;">
+                    <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/web-24dp/logo_googleg_color_24dp.png" alt="Google Logo" style="width: 18px; height: 18px;">
+                    Continuar con Google
+                </button>
+            </div>
+
+        <div class="auth-toggle-container" style="text-align: center; margin-top: 15px;">
         
             <div class="auth-toggle-container" style="text-align: center; margin-top: 15px;">
             <a href="#" id="toggle-auth-mode" style="color: var(--primary-color); text-decoration: none; font-size: 0.9rem;">¿No tienes cuenta? Regístrate aquí</a>
@@ -74,11 +84,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-
-    <!-- Tu script de lógica de Login -->
-    <script src="login.js"></script>
-</body>
-
+    
     <script src="login.js"></script>
 </body>
 </html>
