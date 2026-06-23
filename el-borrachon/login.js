@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // ELEMENTOS DEL DOM PARA CAPTURAR NOMBRE Y APELLIDO (Mantenidos intactos)
     const registerNameGroup = document.getElementById("register-name-group");
-    const registerLastNameGroup = document.getElementById("register-lastname");
+    const registerLastNameGroup = document.getElementById("register-lastname-groupregister-lastname");
     const regFirstNameInput = document.getElementById("reg-firstname");
     const regLastNameInput = document.getElementById("reg-lastname");
 
