@@ -268,9 +268,15 @@ document.addEventListener("DOMContentLoaded", () => {
                         });
                     })
                     .catch((error) => {
-                        alert("Error al registrar: " + traducirError(error.code));
-                        resetSubmitButton(btnSubmitAuth, originalBtnText);
+                        console.error("Error completo de Firebase Auth:", error);
+                        // Cambia el alert original por este para diagnosticar:
+                        alert("Error al autenticar con Google: [" + error.code + "] - " + error.message);
                     });
+
+                    //.catch((error) => {
+                    //    alert("Error al registrar: " + traducirError(error.code));
+                    //    resetSubmitButton(btnSubmitAuth, originalBtnText);
+                    //});
             }
         });
     }
