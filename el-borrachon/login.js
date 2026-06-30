@@ -106,63 +106,96 @@ document.addEventListener("DOMContentLoaded", () => {
         btnGoogleAuth.addEventListener("click", () => {
             const provider = new firebase.auth.GoogleAuthProvider();
             
+            // Cuando el usuario hace clic en el botón de Google:
             auth.signInWithPopup(provider)
                 .then((result) => {
                     const user = result.user;
                     
-                    // Extraer de forma segura el nombre de Google para evitar ReferenceError
-                    const displayName = user.displayName || "Usuario Google";
-                    const nameParts = displayName.split(" ");
-                    const firstName = nameParts[0] || "Usuario";
-                    const lastName = nameParts.slice(1).join(" ") || "Google";
-
-                    // Verificar existencia del usuario en Realtime Database
-                    db.ref("usuarios/" + user.uid).once("value")
+                    // OPCIÓN 1 (Rápida de Firebase): Firebase te dice directamente si es su primera vez en Auth
+                    const esNuevoEnAuth = result.additionalUserInfo.isNewUser;
+                
+                    // OPCIÓN 2 (Recomendada para tu app): Comprobar si existe en tu nodo de "usuarios"
+                    // Buscamos en la base de datos: productos/ o usuarios/ según tu estructura
+                    return db.ref("usuarios/" + user.uid).once("value")
                         .then((snapshot) => {
-                            let userRole = "client"; // Estandarizado a "client" para evitar conflictos
-                            let finalFirstName = firstName;
-                            let finalLastName = lastName;
-
-                            if (snapshot.exists()) {
-                                const existingData = snapshot.val();
-                                // Soportar tanto 'role' como 'rol' por compatibilidad
-                                userRole = existingData.role || existingData.rol || "client";
-                                finalFirstName = existingData.firstName || firstName;
-                                finalLastName = existingData.lastName || lastName;
-                            } else {
-                                // Si es un usuario de Google nuevo, registrarlo correctamente
-                                db.ref("usuarios/" + user.uid).set({
-                                    email: user.email,
-                                    role: userRole,
-                                    firstName: finalFirstName,
-                                    lastName: finalLastName,
-                                    createdAt: new Date().toISOString()
-                                });
-                            }
-
-                            // Guardar la sesión localmente en el sessionStorage
-                            sessionStorage.setItem('currentUser', JSON.stringify({
-                                uid: user.uid,
-                                email: user.email,
-                                role: userRole,
-                                firstName: finalFirstName,
-                                lastName: finalLastName
-                            }));
-
                             
-                            const currentPath = window.location.pathname;
-                            const baseDir = currentPath.substring(0, currentPath.lastIndexOf('/')) + '/';
-                            window.location.href = baseDir + "tienda.html";
-                        })
-                        .catch((dbErr) => {
-                            console.error("Error en la base de datos de Firebase:", dbErr);
-                            alert("Error en la base de datos: " + dbErr.message);
+                            if (snapshot.exists()) {
+                                // ---------------------------------------------------------
+                                // CASO A: EL USUARIO YA ESTABA REGISTRADO
+                                // ---------------------------------------------------------
+                                const userData = snapshot.val(); // Trae sus datos (ej: su rol de admin o cliente)
+                                
+                                alert(`¡Bienvenido de vuelta, ${userData.firstName || user.displayName}!`);
+                                
+                                // Guardamos en sessionStorage con el rol real que viene de la base de datos
+                                sessionStorage.setItem('currentUser', JSON.stringify({
+                                    uid: user.uid,
+                                    email: user.email,
+                                    role: userData.role || "cliente", // Si no tiene rol, por defecto cliente
+                                    firstName: userData.firstName || user.displayName,
+                                    lastName: userData.lastName || ""
+                                }));
+                            
+                                // Ejecutar la redirección que ya programamos
+                                redireccionarATienda();
+                            
+                            } else {
+                                // ---------------------------------------------------------
+                                // CASO B: ES UNA CUENTA NUEVA (Primer inicio de sesión)
+                                // ---------------------------------------------------------
+                                alert("¡Detectamos que es tu primera vez aquí! Creando tu cuenta...");
+                            
+                                // Separar el nombre completo que da Google en Nombre y Apellido
+                                const displayName = user.displayName || "";
+                                const nameParts = displayName.split(" ");
+                                const firstName = nameParts[0] || "Usuario";
+                                const lastName = nameParts.slice(1).join(" ") || "";
+                            
+                                // Estructurar el nuevo perfil con rol por defecto "cliente"
+                                const nuevoUsuario = {
+                                    email: user.email,
+                                    role: "cliente", // Todos los nuevos de Google entran como clientes
+                                    firstName: firstName,
+                                    lastName: lastName,
+                                    fechaRegistro: new Date().toISOString()
+                                };
+                            
+                                // Guardar el nuevo usuario en el nodo "usuarios/UID" de Firebase
+                                return db.ref("usuarios/" + user.uid).set(nuevoUsuario)
+                                    .then(() => {
+                                        // Una vez guardado en la nube, guardamos en la sesión local
+                                        sessionStorage.setItem('currentUser', JSON.stringify({
+                                            uid: user.uid,
+                                            email: user.email,
+                                            role: nuevoUsuario.role,
+                                            firstName: nuevoUsuario.firstName,
+                                            lastName: nuevoUsuario.lastName
+                                        }));
+                                    
+                                        // Redirigir a la tienda
+                                        redireccionarATienda();
+                                    });
+                            }
                         });
                 })
                 .catch((error) => {
-                    console.error("Error completo de Firebase Auth:", error);
-                    alert("Error al autenticar con Google: " + traducirError(error.code));
+                    console.error("Error al autenticar con Google:", error);
+                    alert("Error al autenticar con Google: " + error.message);
                 });
+            
+            // Función auxiliar para mantener limpio el código de redirección
+            function redireccionarATienda() {
+                const currentPath = window.location.pathname;
+                if (currentPath.includes("el-borrachon")) {
+                    if (currentPath.endsWith("/")) {
+                        window.location.href = currentPath + "tienda.html";
+                    } else {
+                        window.location.href = currentPath.replace("index.html", "tienda.html");
+                    }
+                } else {
+                    window.location.href = "tienda.html";
+                }
+            }
         });
     }
     // PROCESAR ENVÍO DEL FORMULARIO (LOGIN / REGISTRO)
