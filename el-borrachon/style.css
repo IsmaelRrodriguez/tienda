@@ -790,3 +790,119 @@ body.tienda-body {
     background-color: #ffc107;
     color: #111 !important;
 }
+/* ==========================================================================
+   9. ESTILOS: PANEL DE CONTROL DE USUARIOS Y ROLES
+   ========================================================================== */
+#admin-users-panel .card {
+    background-color: var(--card-bg) !important; /* Mantiene la coherencia con las tarjetas de productos */
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 10px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+.section-title-admin {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--turquoise-color) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.8rem;
+    display: inline-block;
+    width: 100%;
+}
+
+/* Estilos personalizados para la tabla dentro del panel oscuro */
+#admin-users-panel .table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#admin-users-panel .table {
+    margin-bottom: 0;
+    --bs-table-bg: transparent; /* Fondo transparente para heredar el color de la tarjeta */
+    --bs-table-color: var(--text-color);
+}
+
+#admin-users-panel .table th {
+    background-color: #1a1a24 !important; /* Ligeramente más oscuro que la tarjeta para contrastar */
+    color: var(--turquoise-color);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    padding: 1.2rem 1rem;
+}
+
+#admin-users-panel .table td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    vertical-align: middle;
+    background-color: transparent !important;
+}
+
+#admin-users-panel .table-hover tbody tr:hover td {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Personalización de los botones de acción en la tabla */
+#admin-users-panel .btn-outline-info {
+    color: var(--turquoise-color);
+    border-color: var(--turquoise-color);
+    transition: all 0.3s ease;
+}
+
+#admin-users-panel .btn-outline-info:hover {
+    background-color: var(--turquoise-color);
+    color: #111;
+}
+
+#admin-users-panel .btn-outline-danger {
+    color: var(--danger);
+    border-color: var(--danger);
+    transition: all 0.3s ease;
+}
+
+#admin-users-panel .btn-outline-danger:hover {
+    background-color: var(--danger);
+    color: #fff;
+}
+
+#admin-users-panel .btn-outline-warning {
+    color: #ffc107;
+    border-color: #ffc107;
+    transition: all 0.3s ease;
+}
+
+#admin-users-panel .btn-outline-warning:hover {
+    background-color: #ffc107;
+    color: #111;
+}
+
+/* Insignias de roles (Badges) estilizadas */
+#admin-users-panel .badge.bg-info {
+    background-color: rgba(100, 179, 165, 0.15) !important;
+    color: var(--turquoise-color) !important;
+    border: 1px solid var(--turquoise-color);
+    padding: 0.4em 0.6em;
+    font-size: 0.8rem;
+}
+
+#admin-users-panel .badge.bg-danger {
+    background-color: rgba(255, 107, 107, 0.15) !important;
+    color: var(--danger) !important;
+    border: 1px solid var(--danger);
+    padding: 0.4em 0.6em;
+    font-size: 0.8rem;
+}
+
+/* Ajustes responsivos para celulares (Pantallas de 768px o menos) */
+@media (max-width: 768px) {
+    #admin-users-panel .card {
+        padding: 1.5rem !important;
+    }
+    
+    #admin-users-panel .table td {
+        white-space: nowrap; /* Evita que los botones se aplasten en pantallas muy pequeñas */
+    }
+}

@@ -58,6 +58,23 @@ function inicializarTienda() {
         }
     }
 
+    // Escuchar el total de ventas registradas en Firebase en tiempo real
+    db.ref("ventas").on("value", (snapshot) => {
+        const ventas = snapshot.val();
+        let totalVentas = 0;
+
+        if (ventas) {
+            Object.values(ventas).forEach(venta => {
+                totalVentas += parseFloat(venta.total);
+            });
+        }
+
+        const dashTotalSales = document.getElementById("dash-total-sales");
+        if (dashTotalSales) {
+            dashTotalSales.textContent = `RD$ ${totalVentas.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`;
+        }
+    });
+
     // Escuchar cambios de rol del usuario actual en tiempo real
     db.ref("usuarios/" + currentUser.uid + "/role").on("value", (snapshot) => {
         const serverRole = snapshot.val() || currentUser.role;
@@ -77,61 +94,73 @@ function inicializarTienda() {
             
             cargarUsuariosYRoles(); // Carga la tabla de control de usuarios
 
+            // NUEVO: Referencia al Dashboard
+            const adminDashboard = document.getElementById("admin-dashboard");
+            
             const catalogSection = document.getElementById("catalog-section");
             const carouselSection = document.getElementById("carouselExampleAutoplaying");
 
+            // NUEVO: Botón del Dashboard
+            const btnDashboard = document.querySelector('a[href="#admin-dashboard"]');
+            
             const btnCatalog = document.querySelector('a[href="#catalog-section"]');
             const btnUsers = document.querySelector('a[href="#admin-users-panel"]');
             const btnAddProducts = document.querySelector('a[href="#admin-panel"]');
 
-            function resetActiveAdminButtons() {
-                [btnCatalog, btnUsers, btnAddProducts].forEach(btn => {
+            // MODIFICADO: Nueva lógica de navegación unificada
+            function showAdminSection(activeBtn, visibleSection) {
+                // Limpiar clases activas de los botones
+                [btnDashboard, btnCatalog, btnUsers, btnAddProducts].forEach(btn => {
                     if (btn) btn.classList.remove('active');
+                });
+                
+                if (activeBtn) activeBtn.classList.add('active');
+                
+                // Ocultar todas las secciones primero
+                if (adminDashboard) adminDashboard.classList.add('hidden');
+                if (catalogSection) catalogSection.classList.add('hidden');
+                if (carouselSection) carouselSection.classList.add('hidden');
+                if (adminUsersPanel) adminUsersPanel.classList.add('hidden');
+                if (adminPanel) adminPanel.classList.add('hidden');
+
+                // Mostrar solo la sección seleccionada (el catálogo incluye el carrusel)
+                if (visibleSection) {
+                    visibleSection.classList.remove('hidden');
+                    if (visibleSection === catalogSection && carouselSection) {
+                        carouselSection.classList.remove('hidden');
+                    }
+                }
+            }
+
+            // MODIFICADO: Mostrar el Dashboard por defecto al entrar
+            showAdminSection(btnDashboard, adminDashboard);
+
+            // MODIFICADO: Controladores de clics de pestañas con la nueva función
+            if (btnDashboard) {
+                btnDashboard.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showAdminSection(btnDashboard, adminDashboard);
                 });
             }
 
-            // Configuración por defecto para el administrador (Ver Catálogo)
-            resetActiveAdminButtons();
-            if (btnCatalog) btnCatalog.classList.add('active');
-            if (catalogSection) catalogSection.classList.remove('hidden');
-            if (carouselSection) carouselSection.classList.remove('hidden');
-            if (adminUsersPanel) adminUsersPanel.classList.add('hidden');
-            if (adminPanel) adminPanel.classList.add('hidden');
-
-            // Controladores de clics de pestañas sin perder el diseño
             if (btnCatalog) {
                 btnCatalog.addEventListener('click', (e) => {
                     e.preventDefault();
-                    resetActiveAdminButtons();
-                    btnCatalog.classList.add('active');
-                    if (catalogSection) catalogSection.classList.remove('hidden');
-                    if (carouselSection) carouselSection.classList.remove('hidden');
-                    if (adminUsersPanel) adminUsersPanel.classList.add('hidden');
-                    if (adminPanel) adminPanel.classList.add('hidden');
+                    showAdminSection(btnCatalog, catalogSection);
                 });
             }
 
             if (btnUsers) {
                 btnUsers.addEventListener('click', (e) => {
                     e.preventDefault();
-                    resetActiveAdminButtons();
-                    btnUsers.classList.add('active');
-                    if (adminUsersPanel) adminUsersPanel.classList.remove('hidden');
-                    if (catalogSection) catalogSection.classList.add('hidden');
-                    if (carouselSection) carouselSection.classList.add('hidden');
-                    if (adminPanel) adminPanel.classList.add('hidden');
+                    showAdminSection(btnUsers, adminUsersPanel);
                 });
             }
 
             if (btnAddProducts) {
                 btnAddProducts.addEventListener('click', (e) => {
                     e.preventDefault();
-                    resetActiveAdminButtons();
-                    btnAddProducts.classList.add('active');
-                    if (adminPanel) adminPanel.classList.remove('hidden');
-                    if (catalogSection) catalogSection.classList.add('hidden');
-                    if (carouselSection) carouselSection.classList.add('hidden');
-                    if (adminUsersPanel) adminUsersPanel.classList.add('hidden');
+                    showAdminSection(btnAddProducts, adminPanel);
                 });
             }
 
@@ -148,6 +177,12 @@ function inicializarTienda() {
     // Escuchar el catálogo de productos de Firebase en tiempo real
     db.ref("productos").on("value", (snapshot) => {
         const data = snapshot.val();
+
+        // NUEVO: Actualizar la tarjeta del Dashboard (Total de Bebidas)
+        const dashTotalProducts = document.getElementById("dash-total-products");
+        if (dashTotalProducts) {
+            dashTotalProducts.textContent = data ? Object.keys(data).length : 0;
+        }
 
         if (data) {
             products = Object.keys(data).map(key => ({
@@ -194,6 +229,12 @@ function cargarUsuariosYRoles() {
         tableBody.innerHTML = "";
         const usuarios = snapshot.val();
 
+        // NUEVO: Actualizar la tarjeta del Dashboard (Usuarios Registrados)
+        const dashTotalUsers = document.getElementById("dash-total-users");
+        if (dashTotalUsers) {
+            dashTotalUsers.textContent = usuarios ? Object.keys(usuarios).length : 0;
+        }
+
         if (usuarios) {
             Object.keys(usuarios).forEach(uid => {
                 const user = usuarios[uid];
@@ -218,7 +259,7 @@ function cargarUsuariosYRoles() {
                                 ${botonTexto}
                             </button>
                             <button class="btn btn-sm btn-outline-warning fw-bold" onclick="adminForzarResetPassword('${user.email}')">
-                                🔑 Restablecer Clave
+                                 Restablecer Clave
                             </button>
                         </div>
                     </td>
@@ -488,9 +529,22 @@ if (checkoutBtn) {
             alert("No tienes artículos en tu carrito de compras.");
             return;
         }
-        alert("¡Compra procesada con éxito! Su pedido de bebidas va en camino.");
-        saveCart([]);
-        renderCart();
+
+        // Calcular el total antes de vaciar el carrito
+        const totalCompra = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+        // Registrar la venta en Firebase
+        db.ref("ventas").push({
+            total: totalCompra,
+            fecha: new Date().toISOString(),
+            usuario: currentUser.email
+        }).then(() => {
+            alert("¡Compra procesada con éxito! Su pedido de bebidas va en camino.");
+            saveCart([]);
+            renderCart();
+        }).catch(error => {
+            alert("Error al procesar la compra: " + error.message);
+        });
     });
 }
 
