@@ -137,6 +137,32 @@ if (!currentUser) {
         });
     });
 }
+// Función global para cargar los datos del licor en el formulario de edición
+window.loadProductToEdit = function(id) {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+
+    // Poblar los campos del formulario con los datos existentes
+    document.getElementById("product-id").value = product.id;
+    document.getElementById("prod-name").value = product.name;
+    document.getElementById("prod-price").value = product.price;
+    document.getElementById("prod-img").value = product.img;
+    
+    const selectCategory = document.getElementById("prod-category");
+    if (selectCategory) {
+        selectCategory.value = product.category;
+        selectCategory.classList.add("selected-valid");
+    }
+
+    // Cambiar el texto del botón del formulario para indicar edición
+    document.getElementById("form-submit-btn").textContent = "Actualizar Bebida";
+
+    // Hacer clic programático en la pestaña de "Agregar Bebidas" para mostrar el formulario
+    const btnAddProducts = document.querySelector('a[href="#admin-panel"]');
+    if (btnAddProducts) {
+        btnAddProducts.click();
+    }
+};
 
 // ==========================================
 // GESTIÓN DE USUARIOS Y CAMBIO DE ROLES (NUEVO)
@@ -268,11 +294,11 @@ function renderProducts(productsList) {
         let actionButton = "";
 
         if (currentUser && currentUser.role === "admin") {
-            actionButton = `<button class="btn btn-danger" style="margin-top: auto;" onclick="deleteProduct('${product.id}')">Eliminar</button>`;
-        } else {
             actionButton = `
-                <button class="btn" style="margin-bottom: 8px;" onclick="addToCart('${product.id}')">Añadir al Carrito</button>
-                <button class="btn" style="background-color: #576574;" onclick="showProductCardDetail('${product.id}')">Ver Detalle</button>
+                <div class="d-flex flex-column gap-1" style="margin-top: auto;">
+                    <button class="btn btn-warning btn-sm text-dark fw-bold" onclick="loadProductToEdit('${product.id}')">Editar</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteProduct('${product.id}')">Eliminar</button>
+                </div>
             `;
         }
 
@@ -301,6 +327,9 @@ const productForm = document.getElementById("product-form");
 if (productForm) {
     productForm.addEventListener("submit", (e) => {
         e.preventDefault();
+        
+        // Capturar valores e ID oculto
+        const idVal = document.getElementById("product-id").value;
         const nameVal = document.getElementById("prod-name").value.trim();
         const priceVal = parseFloat(document.getElementById("prod-price").value);
         const imgVal = document.getElementById("prod-img").value.trim();
@@ -311,20 +340,42 @@ if (productForm) {
             return;
         }
 
-        const newProduct = { name: nameVal, price: priceVal, img: imgVal, category: catVal };
+        const productData = { name: nameVal, price: priceVal, img: imgVal, category: catVal };
 
-        // Guardado directo en internet usando Firebase
-        db.ref("productos").push(newProduct)
-            .then(() => {
-                alert("¡Bebida agregada exitosamente y sincronizada en la nube!");
-                productForm.reset();
-                const selectCategory = document.getElementById("prod-category");
-                if (selectCategory) selectCategory.classList.remove("selected-valid");
-            })
-            .catch(error => {
-                console.error("Error al sincronizar con Firebase:", error);
-                alert("Hubo un problema al guardar en internet.");
-            });
+        if (idVal) {
+            // MODO EDICIÓN: Actualizar nodo existente en Firebase
+            db.ref("productos/" + idVal).update(productData)
+                .then(() => {
+                    alert("¡Bebida modificada y sincronizada con éxito!");
+                    productForm.reset();
+                    document.getElementById("product-id").value = ""; // Limpiar ID
+                    document.getElementById("form-submit-btn").textContent = "Guardar"; // Restaurar botón
+                    
+                    const selectCategory = document.getElementById("prod-category");
+                    if (selectCategory) selectCategory.classList.remove("selected-valid");
+
+                    // Redirigir la vista de vuelta al catálogo de manera automática
+                    const btnCatalog = document.querySelector('a[href="#catalog-section"]');
+                    if (btnCatalog) btnCatalog.click();
+                })
+                .catch(error => {
+                    console.error("Error al actualizar en Firebase:", error);
+                    alert("Hubo un problema al actualizar la bebida.");
+                });
+        } else {
+            // MODO CREACIÓN: Operación push normal
+            db.ref("productos").push(productData)
+                .then(() => {
+                    alert("¡Bebida agregada exitosamente y sincronizada en la nube!");
+                    productForm.reset();
+                    const selectCategory = document.getElementById("prod-category");
+                    if (selectCategory) selectCategory.classList.remove("selected-valid");
+                })
+                .catch(error => {
+                    console.error("Error al sincronizar con Firebase:", error);
+                    alert("Hubo un problema al guardar en internet.");
+                });
+        }
     });
 }
 

@@ -149,14 +149,10 @@ document.addEventListener("DOMContentLoaded", () => {
                                 lastName: finalLastName
                             }));
 
-                            // DETECTAR LA RUTA CORRECTA EN GITHUB PAGES DINÁMICAMENTE
+                            
                             const currentPath = window.location.pathname;
-                            if (currentPath.includes("/el-borrachon/")) {
-                                // Cambia index.html por tienda.html manteniendo las carpetas de GitHub
-                                window.location.href = currentPath.replace("index.html", "tienda.html");
-                            } else {
-                                window.location.href = "tienda.html"; // Respaldo para Localhost
-                            }
+                            const baseDir = currentPath.substring(0, currentPath.lastIndexOf('/')) + '/';
+                            window.location.href = baseDir + "tienda.html";
                         })
                         .catch((dbErr) => {
                             console.error("Error en la base de datos de Firebase:", dbErr);
