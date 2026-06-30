@@ -2,21 +2,22 @@
 // 1. ESTADO DE LA APLICACIÓN Y BASE DE DATOS
 // ==========================================
 
-// CONFIGURACIÓN DE FIREBASE (Asegúrate de colocar tu databaseURL correcta)
+// CONFIGURACIÓN DE FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyB6qu7KfOJdiGLXOG-DwJODY3rxYyMEWAU",
     authDomain: "el-borrachon.firebaseapp.com",
-    databaseURL: "https://el-borrachon-default-rtdb.firebaseio.com/", // <-- Reemplaza con la URL exacta de tu Realtime Database si varía
+    databaseURL: "https://el-borrachon-default-rtdb.firebaseio.com/", 
     projectId: "el-borrachon",
     storageBucket: "el-borrachon.firebasestorage.app",
     messagingSenderId: "854934153912",
     appId: "1:854934153912:web:496c4311874785fa23224d"
 };
 
-// Inicializar Firebase
-firebase.initializeApp(firebaseConfig);
+// Inicializar Firebase de forma segura
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 const db = firebase.database();
-
 const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
 
 const defaultProducts = [
@@ -28,232 +29,247 @@ const defaultProducts = [
     { id: 6, name: "Whisky Escocés 12 Años", price: 2500.00, img: "https://images.unsplash.com/photo-1527281400683-1aae777175f8?q=80&w=300", category: "Otros" }
 ];
 
-// Arreglo global reactivo que se llenará automáticamente con los datos de Firebase
 let products = [];
 
-// ==========================================
-// CONTROL DE ACCESOS Y VISTAS DE ROLES
-// ==========================================
+// Redirección de seguridad inmediata si no hay sesión activa
 if (!currentUser) {
     window.location.replace("index.html");
-} else {
-    document.addEventListener("DOMContentLoaded", () => {
-        const adminPanel = document.getElementById("admin-panel");
-        const adminUsersPanel = document.getElementById("admin-users-panel");
-        const adminTopNav = document.getElementById("admin-top-nav");
-        const clientPanel = document.getElementById("client-panel");
-        const userNavLabel = document.getElementById("user-role-label");
-
-        if (userNavLabel) {
-            userNavLabel.textContent = `${currentUser.email} (${currentUser.role.toUpperCase()})`;
-        }
-
-        // Escuchamos el rol del usuario logueado directamente desde Firebase en tiempo real
-        db.ref("usuarios/" + currentUser.uid + "/role").on("value", (snapshot) => {
-            const serverRole = snapshot.val() || currentUser.role;
-            
-            // Si el administrador nos cambió el rol desde el panel, actualizamos la sesión local
-            if (serverRole !== currentUser.role) {
-                currentUser.role = serverRole;
-                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-                window.location.reload(); // Recarga para aplicar los cambios de vista
-                return;
-            }
-
-            // Gestionar visibilidad de paneles según el rol definitivo
-            if (serverRole === "admin") {
-                if (adminTopNav) adminTopNav.classList.remove("hidden");
-                if (clientPanel) clientPanel.classList.add("hidden");
-                cargarUsuariosYRoles(); // Llama a la función de la tabla de usuarios
-
-                // --- INICIO DE LA MODIFICACIÓN INDENTADA: MANEJO DE VISTAS TABS PARA ADMIN ---
-                const catalogSection = document.getElementById("catalog-section");
-                const carouselSection = document.getElementById("carouselExampleAutoplaying");
-
-                // Capturar los botones del administrador mediante sus href correspondientes
-                const btnCatalog = document.querySelector('a[href="#catalog-section"]');
-                const btnUsers = document.querySelector('a[href="#admin-users-panel"]');
-                const btnAddProducts = document.querySelector('a[href="#admin-panel"]');
-
-                function resetActiveAdminButtons() {
-                    [btnCatalog, btnUsers, btnAddProducts].forEach(btn => {
-                        if (btn) btn.classList.remove('active');
-                    });
-                }
-
-                // Configuración inicial por defecto cuando carga como admin (ver Catálogo)
-                if (btnCatalog) btnCatalog.classList.add('active');
-                if (catalogSection) catalogSection.classList.remove('hidden');
-                if (carouselSection) carouselSection.classList.remove('hidden');
-                if (adminUsersPanel) adminUsersPanel.classList.add('hidden');
-                if (adminPanel) adminPanel.classList.add('hidden');
-
-                // EVENTO: Clic en "Catálogo"
-                if (btnCatalog) {
-                    btnCatalog.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        resetActiveAdminButtons();
-                        btnCatalog.classList.add('active');
-                        if (catalogSection) catalogSection.classList.remove('hidden');
-                        if (carouselSection) carouselSection.classList.remove('hidden');
-                        if (adminUsersPanel) adminUsersPanel.classList.add('hidden');
-                        if (adminPanel) adminPanel.classList.add('hidden');
-                    });
-                }
-
-                // EVENTO: Clic en "Usuarios"
-                if (btnUsers) {
-                    btnUsers.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        resetActiveAdminButtons();
-                        btnUsers.classList.add('active');
-                        if (adminUsersPanel) adminUsersPanel.classList.remove('hidden');
-                        if (catalogSection) catalogSection.classList.add('hidden');
-                        if (carouselSection) carouselSection.classList.add('hidden');
-                        if (adminPanel) adminPanel.classList.add('hidden');
-                    });
-                }
-
-                // EVENTO: Clic en "Agregar Bebidas"
-                if (btnAddProducts) {
-                    btnAddProducts.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        resetActiveAdminButtons();
-                        btnAddProducts.classList.add('active');
-                        if (adminPanel) adminPanel.classList.remove('hidden');
-                        if (catalogSection) catalogSection.classList.add('hidden');
-                        if (carouselSection) carouselSection.classList.add('hidden');
-                        if (adminUsersPanel) adminUsersPanel.classList.add('hidden');
-                    });
-                }
-                // --- FIN DE LA MODIFICACIÓN INDENTADA ---
-
-            } else {
-                if (adminTopNav) adminTopNav.classList.add("hidden");
-                if (adminPanel) adminPanel.classList.add("hidden");
-                if (adminUsersPanel) adminUsersPanel.classList.add("hidden");
-                if (clientPanel) clientPanel.classList.remove("hidden");
-            }
-        });
-    });
 }
-// Función global para cargar los datos del licor en el formulario de edición
-window.loadProductToEdit = function(id) {
-    const product = products.find(p => p.id === id);
-    if (!product) return;
-
-    // Poblar los campos del formulario con los datos existentes
-    document.getElementById("product-id").value = product.id;
-    document.getElementById("prod-name").value = product.name;
-    document.getElementById("prod-price").value = product.price;
-    document.getElementById("prod-img").value = product.img;
-    
-    const selectCategory = document.getElementById("prod-category");
-    if (selectCategory) {
-        selectCategory.value = product.category;
-        selectCategory.classList.add("selected-valid");
-    }
-
-    // Cambiar el texto del botón del formulario para indicar edición
-    document.getElementById("form-submit-btn").textContent = "Actualizar Bebida";
-
-    // Hacer clic programático en la pestaña de "Agregar Bebidas" para mostrar el formulario
-    const btnAddProducts = document.querySelector('a[href="#admin-panel"]');
-    if (btnAddProducts) {
-        btnAddProducts.click();
-    }
-};
 
 // ==========================================
-// GESTIÓN DE USUARIOS Y CAMBIO DE ROLES (NUEVO)
+// 2. FUNCIÓN DE INICIALIZACIÓN PRINCIPAL
+// ==========================================
+function inicializarTienda() {
+    if (!currentUser) return;
+
+    const adminPanel = document.getElementById("admin-panel");
+    const adminUsersPanel = document.getElementById("admin-users-panel");
+    const adminTopNav = document.getElementById("admin-top-nav");
+    const clientPanel = document.getElementById("client-panel");
+    const welcomeMsg = document.getElementById("welcome-msg");
+    const adminIndicatorBar = document.getElementById("admin-indicator-bar");
+
+    // Mostrar saludo dinámico unificado usando el ID real corregido
+    if (welcomeMsg) {
+        if (currentUser.firstName && currentUser.lastName) {
+            welcomeMsg.textContent = `Hola, ${currentUser.firstName} ${currentUser.lastName} (${currentUser.role.toUpperCase()})`;
+        } else {
+            welcomeMsg.textContent = `Hola, ${currentUser.email.split('@')[0]} (${currentUser.role.toUpperCase()})`;
+        }
+    }
+
+    // Escuchar cambios de rol del usuario actual en tiempo real
+    db.ref("usuarios/" + currentUser.uid + "/role").on("value", (snapshot) => {
+        const serverRole = snapshot.val() || currentUser.role;
+        
+        if (serverRole !== currentUser.role) {
+            currentUser.role = serverRole;
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            window.location.reload(); 
+            return;
+        }
+
+        // Gestión limpia de paneles y menús de pestañas de Administración
+        if (serverRole === "admin") {
+            if (adminTopNav) adminTopNav.classList.remove("hidden");
+            if (adminIndicatorBar) adminIndicatorBar.classList.remove("hidden");
+            if (clientPanel) clientPanel.classList.add("hidden");
+            
+            cargarUsuariosYRoles(); // Carga la tabla de control de usuarios
+
+            const catalogSection = document.getElementById("catalog-section");
+            const carouselSection = document.getElementById("carouselExampleAutoplaying");
+
+            const btnCatalog = document.querySelector('a[href="#catalog-section"]');
+            const btnUsers = document.querySelector('a[href="#admin-users-panel"]');
+            const btnAddProducts = document.querySelector('a[href="#admin-panel"]');
+
+            function resetActiveAdminButtons() {
+                [btnCatalog, btnUsers, btnAddProducts].forEach(btn => {
+                    if (btn) btn.classList.remove('active');
+                });
+            }
+
+            // Configuración por defecto para el administrador (Ver Catálogo)
+            resetActiveAdminButtons();
+            if (btnCatalog) btnCatalog.classList.add('active');
+            if (catalogSection) catalogSection.classList.remove('hidden');
+            if (carouselSection) carouselSection.classList.remove('hidden');
+            if (adminUsersPanel) adminUsersPanel.classList.add('hidden');
+            if (adminPanel) adminPanel.classList.add('hidden');
+
+            // Controladores de clics de pestañas sin perder el diseño
+            if (btnCatalog) {
+                btnCatalog.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    resetActiveAdminButtons();
+                    btnCatalog.classList.add('active');
+                    if (catalogSection) catalogSection.classList.remove('hidden');
+                    if (carouselSection) carouselSection.classList.remove('hidden');
+                    if (adminUsersPanel) adminUsersPanel.classList.add('hidden');
+                    if (adminPanel) adminPanel.classList.add('hidden');
+                });
+            }
+
+            if (btnUsers) {
+                btnUsers.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    resetActiveAdminButtons();
+                    btnUsers.classList.add('active');
+                    if (adminUsersPanel) adminUsersPanel.classList.remove('hidden');
+                    if (catalogSection) catalogSection.classList.add('hidden');
+                    if (carouselSection) carouselSection.classList.add('hidden');
+                    if (adminPanel) adminPanel.classList.add('hidden');
+                });
+            }
+
+            if (btnAddProducts) {
+                btnAddProducts.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    resetActiveAdminButtons();
+                    btnAddProducts.classList.add('active');
+                    if (adminPanel) adminPanel.classList.remove('hidden');
+                    if (catalogSection) catalogSection.classList.add('hidden');
+                    if (carouselSection) carouselSection.classList.add('hidden');
+                    if (adminUsersPanel) adminUsersPanel.classList.add('hidden');
+                });
+            }
+
+        } else {
+            // Configuración para Clientes normales
+            if (adminTopNav) adminTopNav.classList.add("hidden");
+            if (adminIndicatorBar) adminIndicatorBar.classList.add("hidden");
+            if (adminPanel) adminPanel.classList.add("hidden");
+            if (adminUsersPanel) adminUsersPanel.classList.add("hidden");
+            if (clientPanel) clientPanel.classList.remove("hidden");
+        }
+    });
+
+    // Escuchar el catálogo de productos de Firebase en tiempo real
+    db.ref("productos").on("value", (snapshot) => {
+        const data = snapshot.val();
+
+        if (data) {
+            products = Object.keys(data).map(key => ({
+                id: key, 
+                name: data[key].name,
+                price: data[key].price,
+                img: data[key].img,
+                category: data[key].category
+            }));
+        } else {
+            defaultProducts.forEach(prod => {
+                db.ref("productos").push({
+                    name: prod.name,
+                    price: prod.price,
+                    img: prod.img,
+                    category: prod.category
+                });
+            });
+            return;
+        }
+
+        renderCarousel();
+        renderProducts(products);
+    });
+
+    renderCart();
+}
+
+// Ejecución segura de la inicialización (evita problemas de DOM estancados)
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", inicializarTienda);
+} else {
+    inicializarTienda();
+}
+
+// ==========================================
+// 3. GESTIÓN DE USUARIOS Y ROLES (GLOBALES)
 // ==========================================
 function cargarUsuariosYRoles() {
     const tableBody = document.getElementById("users-table-body");
     if (!tableBody) return;
 
-    // Escuchar el nodo 'usuarios' en Firebase Realtime Database
     db.ref("usuarios").on("value", (snapshot) => {
         tableBody.innerHTML = "";
         const usuarios = snapshot.val();
 
         if (usuarios) {
-            Object.keys(usuarios).map(uid => {
+            Object.keys(usuarios).forEach(uid => {
                 const user = usuarios[uid];
-                const fecha = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Predefinido";
+                if (!user || !user.email) return;
+
+                const fecha = user.createdAt || user.fechaRegistro 
+                    ? new Date(user.createdAt || user.fechaRegistro).toLocaleDateString() 
+                    : "Predefinido";
                 
-                // Definir el color del badge según el rol
                 const badgeClass = user.role === "admin" ? "bg-danger" : "bg-info";
-                const botonTexto = user.role === "admin" ? "Cambiar a Cliente" : "Hacer Administrador";
+                const botonTexto = user.role === "admin" ? "Hacer Cliente" : "Hacer Admin";
                 const botonClass = user.role === "admin" ? "btn-outline-info" : "btn-outline-danger";
 
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td><strong>${user.email}</strong></td>
-                    <td><span class="badge ${badgeClass}">${user.role.toUpperCase()}</span></td>
+                    <td><span class="badge ${badgeClass} text-uppercase fw-bold">${user.role || 'client'}</span></td>
                     <td><span class="text-white-50 small">${fecha}</span></td>
-                    <td class="text-end">
-                        <button class="btn btn-sm ${botonClass}" onclick="cambiarRolUsuario('${uid}', '${user.role}')">
-                            ${botonTexto}
-                        </button>
+                    <td>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button class="btn btn-sm ${botonClass} fw-bold" onclick="cambiarRolUsuario('${uid}', '${user.role || 'client'}')">
+                                ${botonTexto}
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning fw-bold" onclick="adminForzarResetPassword('${user.email}')">
+                                🔑 Restablecer Clave
+                            </button>
+                        </div>
                     </td>
                 `;
                 tableBody.appendChild(row);
             });
         } else {
-            tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-white-50">No hay usuarios registrados en la base de datos.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-white-50">No hay usuarios registrados.</td></tr>`;
         }
     });
 }
 
-// Función global para actualizar el rol en Firebase
 window.cambiarRolUsuario = function(uid, rolActual) {
     const nuevoRol = rolActual === "admin" ? "client" : "admin";
     
-    // Evitar que el administrador se quite los permisos a sí mismo por error
-    if (currentUser.uid === uid || currentUser.email === "admin@borrachon.com") {
-        if (currentUser.uid === uid) {
-            alert("⚠️ No puedes cambiar tu propio rol de administrador.");
-            return;
-        }
+    if (currentUser.uid === uid) {
+        alert("⚠️ No puedes cambiar tu propio rol de administrador.");
+        return;
     }
 
-    db.ref("usuarios/" + uid).update({
-        role: nuevoRol
-    })
+    db.ref("usuarios/" + uid).update({ role: nuevoRol })
     .then(() => {
         alert(`¡Rol actualizado con éxito a ${nuevoRol.toUpperCase()}!`);
-        
-        // Si el administrador actual modificó su propia sesión secundaria, actualizamos
-        if(currentUser.uid === uid) {
-            currentUser.role = nuevoRol;
-            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-            window.location.reload();
-        }
     })
-    .catch((error) => {
-        console.error("Error al actualizar el rol:", error);
-    });
+    .catch((error) => console.error("Error al actualizar el rol:", error));
+};
+
+window.adminForzarResetPassword = function(email) {
+    const confirmar = confirm(`¿Estás seguro de que deseas enviar un correo de restablecimiento de contraseña a: ${email}?`);
+    if (confirmar) {
+        firebase.auth().sendPasswordResetEmail(email)
+            .then(() => {
+                alert(`¡Solicitud procesada! Se ha enviado un enlace seguro al correo ${email} para que reconfigure su contraseña.`);
+            })
+            .catch((error) => {
+                console.error("Error en reset de clave:", error);
+                alert("No se pudo enviar la solicitud: " + error.message);
+            });
+    }
 };
 
 // ==========================================
-// 3. RENDERIZADO DEL INTERFAZ DE USUARIO
+// 4. RENDERIZADO DE INTERFAZ (PRODUCTOS / CAROUSEL)
 // ==========================================
-
-// Pintar el Carrusel dinámico con los últimos licores de internet
 function renderCarousel() {
     const carouselInner = document.getElementById("carousel-dynamic-inner");
-    if (!carouselInner) return;
+    if (!carouselInner || !products || products.length === 0) return;
 
     carouselInner.innerHTML = "";
-
-    // Si no hay productos en la base de datos, salimos de la función
-    if (!products || products.length === 0) return;
-
-    // Recorremos los productos e inyectamos la estructura exacta que Bootstrap requiere
     products.forEach((product, index) => {
-        // Solo el primer producto (index === 0) lleva la clase 'active'
         const activeClass = index === 0 ? "active" : "";
-
         carouselInner.insertAdjacentHTML('beforeend', `
             <div class="carousel-item ${activeClass}">
                 <img src="${product.img}" class="d-block w-100" alt="${product.name}" style="height: 350px; object-fit: cover;">
@@ -265,16 +281,14 @@ function renderCarousel() {
         `);
     });
 
-    // Reiniciamos el carrusel para que reconozca los nuevos elementos y aplique el tiempo
     const myCarouselEl = document.getElementById('carouselExampleAutoplaying');
     if (myCarouselEl) {
         const carousel = bootstrap.Carousel.getOrCreateInstance(myCarouselEl);
-        carousel.to(0); // Mueve el carrusel al primer elemento de forma segura
-        carousel.cycle(); // Activa el movimiento automático
+        carousel.to(0);
+        carousel.cycle();
     }
 }
 
-// Pintar las cuadrículas de productos por categorías
 function renderProducts(productsList) {
     const grids = {
         Ron: document.getElementById("grid-ron"),
@@ -291,44 +305,60 @@ function renderProducts(productsList) {
 
     productsList.forEach(product => {
         const formattedPrice = parseFloat(product.price).toLocaleString('es-DO', { minimumFractionDigits: 2 });
-        let actionButton = "";
+        let actionButton = `<button class="btn btn-primary btn-sm w-100 mt-2 fw-bold" onclick="addToCart('${product.id}')">Añadir al Carrito</button>`;
 
         if (currentUser && currentUser.role === "admin") {
             actionButton = `
-                <div class="d-flex flex-column gap-1" style="margin-top: auto;">
+                <div class="d-flex flex-column gap-1 w-100" style="margin-top: auto;">
                     <button class="btn btn-warning btn-sm text-dark fw-bold" onclick="loadProductToEdit('${product.id}')">Editar</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteProduct('${product.id}')">Eliminar</button>
+                    <button class="btn btn-danger btn-sm fw-bold" onclick="deleteProduct('${product.id}')">Eliminar</button>
                 </div>
             `;
         }
 
         const cardHTML = `
             <div class="product-card">
-                <img src="${product.img}" alt="${product.name}">
-                <h3>${product.name}</h3>
+                <img src="${product.img}" alt="${product.name}" onclick="showProductCardDetail('${product.id}')" style="cursor:pointer;">
+                <h3 onclick="showProductCardDetail('${product.id}')" style="cursor:pointer;">${product.name}</h3>
                 <p class="price">Precio de venta RD$ ${formattedPrice}</p>
                 ${actionButton}
             </div>
         `;
 
-        if (grids[product.category]) {
-            grids[product.category].insertAdjacentHTML('beforeend', cardHTML);
-        }
-        if (grids.Todas) {
-            grids.Todas.insertAdjacentHTML('beforeend', cardHTML);
-        }
+        if (grids[product.category]) grids[product.category].insertAdjacentHTML('beforeend', cardHTML);
+        if (grids.Todas) grids.Todas.insertAdjacentHTML('beforeend', cardHTML);
     });
 }
 
 // ==========================================
-// 4. LOGICA DE ADMINISTRACIÓN (ALTAS Y BAJAS EN FIREBASE)
+// 5. OPERACIONES DE PRODUCTOS (ALTAS, EDICIÓN, BAJAS)
 // ==========================================
+window.loadProductToEdit = function(id) {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+
+    document.getElementById("product-id").value = product.id;
+    document.getElementById("prod-name").value = product.name;
+    document.getElementById("prod-price").value = product.price;
+    document.getElementById("prod-img").value = product.img;
+    
+    const selectCategory = document.getElementById("prod-category");
+    if (selectCategory) {
+        selectCategory.value = product.category;
+        selectCategory.classList.add("selected-valid");
+    }
+
+    document.getElementById("form-submit-btn").textContent = "Actualizar Bebida";
+
+    const btnAddProducts = document.querySelector('a[href="#admin-panel"]');
+    if (btnAddProducts) btnAddProducts.click();
+};
+
 const productForm = document.getElementById("product-form");
 if (productForm) {
     productForm.addEventListener("submit", (e) => {
         e.preventDefault();
         
-        // Capturar valores e ID oculto
         const idVal = document.getElementById("product-id").value;
         const nameVal = document.getElementById("prod-name").value.trim();
         const priceVal = parseFloat(document.getElementById("prod-price").value);
@@ -336,62 +366,44 @@ if (productForm) {
         const catVal = document.getElementById("prod-category").value;
 
         if (!nameVal || isNaN(priceVal) || !imgVal || !catVal) {
-            alert("Por favor, completa correctamente todos los campos obligatorios.");
+            alert("Por favor, completa todos los campos.");
             return;
         }
 
         const productData = { name: nameVal, price: priceVal, img: imgVal, category: catVal };
 
         if (idVal) {
-            // MODO EDICIÓN: Actualizar nodo existente en Firebase
             db.ref("productos/" + idVal).update(productData)
                 .then(() => {
-                    alert("¡Bebida modificada y sincronizada con éxito!");
+                    alert("¡Bebida modificada con éxito!");
                     productForm.reset();
-                    document.getElementById("product-id").value = ""; // Limpiar ID
-                    document.getElementById("form-submit-btn").textContent = "Guardar"; // Restaurar botón
-                    
-                    const selectCategory = document.getElementById("prod-category");
-                    if (selectCategory) selectCategory.classList.remove("selected-valid");
-
-                    // Redirigir la vista de vuelta al catálogo de manera automática
+                    document.getElementById("product-id").value = "";
+                    document.getElementById("form-submit-btn").textContent = "Guardar";
                     const btnCatalog = document.querySelector('a[href="#catalog-section"]');
                     if (btnCatalog) btnCatalog.click();
                 })
-                .catch(error => {
-                    console.error("Error al actualizar en Firebase:", error);
-                    alert("Hubo un problema al actualizar la bebida.");
-                });
+                .catch(error => alert("Error al actualizar: " + error.message));
         } else {
-            // MODO CREACIÓN: Operación push normal
             db.ref("productos").push(productData)
                 .then(() => {
-                    alert("¡Bebida agregada exitosamente y sincronizada en la nube!");
+                    alert("¡Bebida agregada exitosamente!");
                     productForm.reset();
-                    const selectCategory = document.getElementById("prod-category");
-                    if (selectCategory) selectCategory.classList.remove("selected-valid");
                 })
-                .catch(error => {
-                    console.error("Error al sincronizar con Firebase:", error);
-                    alert("Hubo un problema al guardar en internet.");
-                });
+                .catch(error => alert("Hubo un problema al guardar: " + error.message));
         }
     });
 }
 
-// Función global para eliminar licores desde la base de datos
-function deleteProduct(id) {
-    if (confirm("¿Estás seguro de que deseas eliminar este producto permanentemente de todos los dispositivos?")) {
+window.deleteProduct = function(id) {
+    if (confirm("¿Estás seguro de que deseas eliminar este producto permanentemente?")) {
         db.ref(`productos/${id}`).remove()
-            .then(() => {
-                alert("Producto eliminado correctamente.");
-            })
-            .catch(error => console.error("Error al eliminar de Firebase:", error));
+            .then(() => alert("Producto eliminado correctamente."))
+            .catch(error => console.error("Error al eliminar:", error));
     }
-}
+};
 
 // ==========================================
-// 5. GESTIÓN DEL CARRITO DE COMPRAS (LOCAL POR PESTAÑA)
+// 6. CARRITO DE COMPRAS Y MODAL DE DETALLE
 // ==========================================
 function getCart() {
     return JSON.parse(localStorage.getItem(`cart_${currentUser?.email}`)) || [];
@@ -401,7 +413,7 @@ function saveCart(cart) {
     localStorage.setItem(`cart_${currentUser?.email}`, JSON.stringify(cart));
 }
 
-function addToCart(id) {
+window.addToCart = function(id) {
     const product = products.find(p => p.id === id);
     if (!product) return;
 
@@ -416,9 +428,9 @@ function addToCart(id) {
 
     saveCart(cart);
     renderCart();
-}
+};
 
-function updateCartQuantity(id, amount) {
+window.updateCartQuantity = function(id, amount) {
     let cart = getCart();
     const item = cart.find(i => i.id === id);
     if (!item) return;
@@ -430,7 +442,7 @@ function updateCartQuantity(id, amount) {
 
     saveCart(cart);
     renderCart();
-}
+};
 
 function renderCart() {
     const cartItemsContainer = document.getElementById("cart-items");
@@ -462,13 +474,12 @@ function renderCart() {
     });
 
     if (cart.length === 0) {
-        cartItemsContainer.innerHTML = `<p class="text-muted m-0 text-center py-2">Tu carrito está completamente vacío.</p>`;
+        cartItemsContainer.innerHTML = `<p class="text-muted m-0 text-center py-2">Tu carrito está vacío.</p>`;
     }
 
     cartTotalVal.textContent = total.toLocaleString('es-DO', { minimumFractionDigits: 2 });
 }
 
-// Finalizar la compra
 const checkoutBtn = document.getElementById("checkout-btn");
 if (checkoutBtn) {
     checkoutBtn.addEventListener("click", () => {
@@ -483,10 +494,7 @@ if (checkoutBtn) {
     });
 }
 
-// ==========================================
-// 6. DETALLES EXTENDIDOS (MODAL)
-// ==========================================
-function showProductCardDetail(id) {
+window.showProductCardDetail = function(id) {
     const product = products.find(p => p.id === id);
     if (!product) return;
 
@@ -496,41 +504,33 @@ function showProductCardDetail(id) {
     if (!modal || !modalContent) return;
 
     modalContent.innerHTML = `
-        <span class="close-modal" onclick="closeProductDetailModal()">&times;</span>
-        <div class="row align-items-center g-4">
-            <div class="col-md-5 text-center">
-                <img src="${product.img}" alt="${product.name}" class="img-fluid rounded" style="max-height: 280px; object-fit: contain; border: 1px solid rgba(255,255,255,0.1);">
-            </div>
-            <div class="col-md-7">
-                <span class="badge mb-2 text-uppercase" style="background-color: var(--turquoise-color); font-size: 0.75rem;">${product.category}</span>
-                <h2 class="text-white mb-2" style="font-weight: 700;">${product.name}</h2>
-                <h3 class="text-warning mb-4" style="font-weight: 600;">RD$ ${parseFloat(product.price).toLocaleString('es-DO', { minimumFractionDigits: 2 })}</h3>
-                <p class="text-muted mb-4" style="font-size: 0.95rem; line-height: 1.6;">
-                    Disfruta de la mejor selección de nuestra categoría <strong class="text-white">${product.category}</strong>. 
-                    Producto importado y distribuido oficialmente bajo los estándares de calidad de El Borrachón.
-                </p>
-                <button class="btn w-100" style="padding: 10px; font-weight: 600;" onclick="addToCart('${product.id}'); closeProductDetailModal();">Añadir al Carrito</button>
+        <div class="card" style="width: 22rem;">
+            <span class="close-modal text-end pe-3 pt-2" onclick="closeProductDetailModal()" style="cursor:pointer; font-size:1.8rem;">&times;</span>
+            <img src="${product.img}" class="card-img-top p-3" alt="${product.name}" style="height:220px; object-fit:contain;">
+            <div class="card-body">
+                <span class="badge bg-info text-uppercase mb-2">${product.category}</span>
+                <h4 class="card-title text-white fw-bold">${product.name}</h4>
+                <p class="card-text text-white-50">Selección premium importada y distribuida oficialmente bajo los estándares de El Borrachón.</p>
+                <h5 class="text-warning fw-bold mb-3">RD$ ${parseFloat(product.price).toLocaleString('es-DO', { minimumFractionDigits: 2 })}</h5>
+                <button class="btn btn-primary w-100 fw-bold" onclick="addToCart('${product.id}'); closeProductDetailModal();">Añadir al Carrito</button>
             </div>
         </div>
     `;
-
     modal.classList.remove("hidden");
-}
+};
 
-function closeProductDetailModal() {
+window.closeProductDetailModal = function() {
     const modal = document.getElementById("details-modal");
     if (modal) modal.classList.add("hidden");
-}
+};
 
 window.addEventListener("click", (e) => {
     const modal = document.getElementById("details-modal");
-    if (e.target === modal) {
-        modal.classList.add("hidden");
-    }
+    if (e.target === modal) modal.classList.add("hidden");
 });
 
 // ==========================================
-// 7. BUSCADOR INTERNO FILTRADO Y LÓGICA AUXILIAR
+// 7. BUSCADOR Y CIERRE DE SESIÓN
 // ==========================================
 const searchInput = document.getElementById("search-input");
 if (searchInput) {
@@ -544,83 +544,18 @@ if (searchInput) {
                 bootstrap.Tab.getOrCreateInstance(todasTab).show();
             }
         }
-
         const filtered = products.filter(p => p.name.toLowerCase().includes(query));
         renderProducts(filtered);
     });
 }
 
-// ==========================================
-// CERRAR SESIÓN (OPTIMIZADO PARA EVITAR BUCLES)
-// ==========================================
 const logoutBtn = document.getElementById("logout-btn");
 if (logoutBtn) {
     logoutBtn.addEventListener("click", (e) => {
-        e.preventDefault(); // Evita cualquier comportamiento por defecto del enlace/botón
-        
-        // 1. Limpiamos inmediatamente el almacenamiento local
+        e.preventDefault();
         sessionStorage.removeItem('currentUser');
-        
-        // 2. Cerramos sesión en los servidores de Firebase
         firebase.auth().signOut()
-            .then(() => {
-                // Redirección limpia reemplazando el historial para que no pueda dar "atrás"
-                window.location.replace("index.html");
-            })
-            .catch((error) => {
-                console.error("Error al cerrar sesión en Firebase Auth:", error);
-                // Forzar salida si falla la red
-                window.location.replace("index.html");
-            });
+            .then(() => window.location.replace("index.html"))
+            .catch(() => window.location.replace("index.html"));
     });
 }
-
-// ==========================================
-// 8. INICIALIZACIÓN CONECTADA A LA NUBE
-// ==========================================
-document.addEventListener("DOMContentLoaded", () => {
-    
-    // MODIFICACIÓN: Mostrar saludo con Nombre y Apellido si existen en la sesión
-    const welcomeTextElement = document.getElementById("welcome-user-text");
-    if (welcomeTextElement && currentUser) {
-        if (currentUser.firstName && currentUser.lastName) {
-            welcomeTextElement.textContent = `Hola, ${currentUser.firstName} ${currentUser.lastName}`;
-        } else {
-            // Fallback por si inicia sesión con un correo viejo sin registro de nombre completo
-            welcomeTextElement.textContent = `Hola, ${currentUser.email.split('@')[0]}`;
-        }
-    }
-
-    // Escuchar cambios en internet en tiempo real
-    db.ref("productos").on("value", (snapshot) => {
-        const data = snapshot.val();
-
-        if (data) {
-            // Convertimos la colección de Firebase en un arreglo manejable
-            products = Object.keys(data).map(key => ({
-                id: key, 
-                name: data[key].name,
-                price: data[key].price,
-                img: data[key].img,
-                category: data[key].category
-            }));
-        } else {
-            // Si la base de datos de internet está vacía, subimos los defaultProducts automáticos
-            defaultProducts.forEach(prod => {
-                db.ref("productos").push({
-                    name: prod.name,
-                    price: prod.price,
-                    img: prod.img,
-                    category: prod.category
-                });
-            });
-            return;
-        }
-
-        // Redibujar de forma síncrona en todas las PCs y celulares abiertos
-        renderCarousel();
-        renderProducts(products);
-    });
-
-    renderCart();
-});
